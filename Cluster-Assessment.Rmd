@@ -1,0 +1,29 @@
+---
+title: "DANA4840-Project"
+author: "Team 3"
+output: html_document
+---
+
+```{r}
+library(hopkins)
+```
+
+## Customer Data
+```{r}
+aryan1 <- read.csv("Dataset_Aryan/Customer_Data.csv", header = TRUE)
+aryan1 <- aryan1[, -1]
+aryan1 <- na.omit(aryan1)
+
+hopkins_val <- hopkins(aryan1, m = ceiling(nrow(aryan1) / 10))
+hopkins_val
+```
+
+
+```{r}
+pat1 <- read.csv("Dataset_Pat/heart.csv", header = TRUE)
+pat1 <- pat1[, 0:13]
+pat1 <- na.omit(pat1)
+
+hopkins_val <- hopkins(pat1, m = ceiling(nrow(pat1) / 10))
+hopkins_val
+```
