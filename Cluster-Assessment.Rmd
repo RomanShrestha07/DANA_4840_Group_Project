@@ -27,3 +27,5 @@ pat1 <- na.omit(pat1)
 hopkins_val <- hopkins(pat1, m = ceiling(nrow(pat1) / 10))
 hopkins_val
 ```
+
+## 123
