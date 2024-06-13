@@ -1,0 +1,39 @@
+---
+title: "Untitled"
+author: "Maryam Gadimova"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+df_h <- read.csv("Dataset_Roman/sobar-72.csv", header = TRUE)
+drops <- "ca_cervix"
+df_h <- df_h[, !(names(df_h) %in% drops)]
+df_h <- na.omit(df_h)
+df_h
+```
+
+
+```{r}
+res.dist <- dist(df_h, method = "euclidean")
+res.dist
+```
+
+```{r}
+as.matrix(res.dist)[1:6, 1:6]
+```
+
+```{r}
+res.hc <- hclust(d = res.dist, method = "ward.D2")
+res.hc
+```
+
+
+```{r}
+fviz_dend(res.hc, k = 5, # Cut in four groups
+          cex = 0.5, # label size
+          k_colors = color_pallet,
+          color_labels_by_k = TRUE, # color labels by groups
+          rect = TRUE # Add rectangle around groups
+)
+```
