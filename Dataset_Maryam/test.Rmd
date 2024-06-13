@@ -6,10 +6,7 @@ output: html_document
 ---
 
 ```{r}
-df_h <- read.csv("Dataset_Roman/sobar-72.csv", header = TRUE)
-drops <- "ca_cervix"
-df_h <- df_h[, !(names(df_h) %in% drops)]
-df_h <- na.omit(df_h)
+df_h <- read.csv("mtcars.csv", header = TRUE)
 df_h
 ```
 
