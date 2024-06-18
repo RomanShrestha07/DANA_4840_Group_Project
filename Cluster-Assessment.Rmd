@@ -6,6 +6,7 @@ output: html_document
 
 ```{r}
 library(hopkins)
+library(factoextra)
 ```
 
 ## Customer Data 123
@@ -20,21 +21,9 @@ library(hopkins)
 
 ## K-Means
 ```{r}
-# df <- read.csv("Dataset_Pat/hcvdat0.csv", header = TRUE)
-# drops <- c("X", "Category", "Sex")
-# df <- df[, !(names(df) %in% drops)]
-
-# df <- read.csv("Dataset_Aryan/Customer_Data_ok.csv", header = TRUE)
-# drops <- "cust_id"
-# df <- df[, !(names(df) %in% drops)]
-# df <- na.omit(df)
-
-df <- read_excel("Dataset_Roman/Mine_Dataset.xls")
-drops <- "M"
-df <- df[, !(names(df) %in% drops)]
-
-# df <- read.csv("Dataset_Roman/Wholesale customers data.csv", header = TRUE)
-# drops <- c("Channel", "Region")
+df <- read.table("Dataset_Pat/wdbc.data", header = TRUE, sep = ",")
+df <- df[, -c(1, 2)]
+# drops <- "M"
 # df <- df[, !(names(df) %in% drops)]
 
 head(df)
@@ -42,7 +31,7 @@ head(df)
 
 
 ```{r}
-km.res <- kmeans(scale(), 5, nstart = 30)
+km.res <- kmeans(scale(df), 6, nstart = 30)
 km.res
 ```
 
@@ -61,10 +50,13 @@ fviz_cluster(km.res, data = df,
 
 ## Hierarchical
 ```{r}
-df_h <- read.csv("Dataset_Maryam/seeds_dataset.txt", header = TRUE)
-drops <- "ca_cervix"
+df_h <- read.csv("Dataset_Maryam/mtcars.csv", header = TRUE)
+rownames(df_h) <- df$model
+
+drops <- "model"
 df_h <- df_h[, !(names(df_h) %in% drops)]
 df_h <- na.omit(df_h)
+
 df_h
 ```
 
@@ -85,16 +77,22 @@ res.hc
 ```
 
 ```{r}
-fviz_dend(res.hc, k = 5, # Cut in four groups
-          cex = 0.5, # label size
-          k_colors = color_pallet,
-          color_labels_by_k = TRUE, # color labels by groups
-          rect = TRUE # Add rectangle around groups
+fviz_dend(
+  res.hc,
+  k = 2,
+  cex = 0.5, # label size
+  k_colors = color_pallet,
+  color_labels_by_k = TRUE, # color labels by groups
+  rect = TRUE # Add rectangle around groups
 )
 ```
 
 ```{r}
-grp <- cutree(res.hc, k = 5)
+fviz_nbclust(df_h, hcut, nstart = 25, method = "gap_stat")
+```
+
+```{r}
+grp <- cutree(res.hc, k = 2)
 
 fviz_cluster(list(data = df_h, cluster = grp),
              palette = color_pallet,
