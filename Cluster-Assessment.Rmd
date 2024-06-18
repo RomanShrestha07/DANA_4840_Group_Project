@@ -30,19 +30,19 @@ library(hopkins)
 # df <- na.omit(df)
 
 df <- read_excel("Dataset_Roman/Mine_Dataset.xls")
-drops <- c("M")
+drops <- "M"
 df <- df[, !(names(df) %in% drops)]
 
 # df <- read.csv("Dataset_Roman/Wholesale customers data.csv", header = TRUE)
 # drops <- c("Channel", "Region")
 # df <- df[, !(names(df) %in% drops)]
 
-df
+head(df)
 ```
 
 
 ```{r}
-km.res <- kmeans(scale(df), 5, nstart = 30)
+km.res <- kmeans(scale(), 5, nstart = 30)
 km.res
 ```
 
@@ -61,7 +61,7 @@ fviz_cluster(km.res, data = df,
 
 ## Hierarchical
 ```{r}
-df_h <- read.csv("Dataset_Roman/sobar-72.csv", header = TRUE)
+df_h <- read.csv("Dataset_Maryam/seeds_dataset.txt", header = TRUE)
 drops <- "ca_cervix"
 df_h <- df_h[, !(names(df_h) %in% drops)]
 df_h <- na.omit(df_h)
