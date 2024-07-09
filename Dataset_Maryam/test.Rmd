@@ -20,9 +20,32 @@ res.dist
 as.matrix(res.dist)[1:6, 1:6]
 ```
 
+## single
 ```{r}
-res.hc <- hclust(d = res.dist, method = "ward.D2")
-res.hc
+res.hc_single <- hclust(d = res.dist, method = "single")
+res.hc_single
+```
+## complete
+```{r}
+res.hc_complete <- hclust(d = res.dist, method = "complete")
+res.hc_complete
+```
+## average
+```{r}
+res.hc_average <- hclust(d = res.dist, method = "average")
+res.hc_average
+```
+## ward.D
+```{r}
+res.hc_ward <- hclust(d = res.dist, method = "ward.D")
+res.hc_ward
+```
+
+
+## ward.D2
+```{r}
+res.hc_ward2 <- hclust(d = res.dist, method = "ward.D2")
+res.hc_ward2
 ```
 
 
