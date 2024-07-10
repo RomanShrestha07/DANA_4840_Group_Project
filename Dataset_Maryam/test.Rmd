@@ -6,13 +6,20 @@ output: html_document
 ---
 
 ```{r}
-df_h <- read.csv("mtcars.csv", header = TRUE)
-df_h
+data("mtcars")
+
+cars <- scale(mtcars)
+
+head(cars, row = 6)
+```
+
+```{r}
+str(cars)
 ```
 
 
 ```{r}
-res.dist <- dist(df_h, method = "euclidean")
+res.dist <- dist(cars, method = "euclidean")
 res.dist
 ```
 
@@ -22,37 +29,140 @@ as.matrix(res.dist)[1:6, 1:6]
 
 ## single
 ```{r}
-res.hc_single <- hclust(d = res.dist, method = "single")
-res.hc_single
+hc_single <- hclust(d = res.dist, method = "single")
+hc_single
 ```
+```{r}
+# Set the labels to the car models
+hc_single$labels <- rownames(mtcars)
+
+par(mar = c(10, 4, 4, 2) + 0.1)
+
+# Plot the dendrogram with custom labels
+fviz_dend(hc_single, cex = 0.5, label_cex = 0.8,  main = "Single Linkage Dendrogram")
+```
+```{r}
+# Correlation between cophenetic distance and the original distance
+cor(res.dist, cophenetic(hc_single))
+```
+```{r}
+par(mar = c(10, 4, 4, 2) + 0.1)  # Adjust bottom margin
+
+# Plot the dendrogram with custom labels and increased visibility
+fviz_dend(hc_single, cex = 0.5,                # Increase the label size
+          k = 4,                              # Number of clusters
+          k_colors = "jco",                   # Color palette for clusters
+          rect = TRUE, rect_border = "jco",   # Add rectangle around clusters
+          rect_fill = TRUE,                   # Fill the rectangle
+          label_cols = "black",               # Color of labels
+          label_cex = 0.5,                    # Font size of labels
+          main = "Single Linkage Dendrogram") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+
 ## complete
 ```{r}
-res.hc_complete <- hclust(d = res.dist, method = "complete")
-res.hc_complete
+hc_complete <- hclust(d = res.dist, method = "complete")
+hc_complete
 ```
+
+```{r}
+fviz_dend(hc_complete, cex = 0.5)
+```
+```{r}
+# Correlation between cophenetic distance and the original distance
+cor(res.dist, cophenetic(hc_complete))
+```
+
 ## average
 ```{r}
-res.hc_average <- hclust(d = res.dist, method = "average")
-res.hc_average
+hc_average <- hclust(d = res.dist, method = "average")
+hc_average
 ```
+
+```{r}
+fviz_dend(hc_average, cex = 0.5)
+```
+
+```{r}
+# Correlation between cophenetic distance and the original distance
+cor(res.dist, cophenetic(res.hc_average))
+```
+## centroid
+```{r}
+hc_centroid <- hclust(d = res.dist, method = "ward.D2")
+hc_centroid
+```
+```{r}
+fviz_dend(hc_centroid, cex = 0.5)
+```
+```{r}
+# Correlation between cophenetic distance and the original distance
+cor(res.dist, cophenetic(hc_centroid))
+```
+
 ## ward.D
 ```{r}
-res.hc_ward <- hclust(d = res.dist, method = "ward.D")
-res.hc_ward
+hc_ward <- hclust(d = res.dist, method = "ward.D")
+hc_ward
 ```
 
-
+```{r}
+fviz_dend(hc_ward, cex = 0.5)
+```
+```{r}
+# Correlation between cophenetic distance and the original distance
+cor(res.dist, cophenetic(hc_ward))
+```
 ## ward.D2
 ```{r}
-res.hc_ward2 <- hclust(d = res.dist, method = "ward.D2")
-res.hc_ward2
+hc_ward2 <- hclust(d = res.dist, method = "ward.D2")
+hc_ward2
 ```
+
+```{r}
+fviz_dend(hc_ward2, cex = 0.5)
+```
+```{r}
+# Correlation between cophenetic distance and the original distance
+cor(res.dist, cophenetic(hc_ward2))
+```
+
+## Comparison Dendrograms
+```{r}
+#Create multiple dendrograms by chaining
+dend_complete <- df %>% dist %>% hclust("complete") %>% as.dendrogram
+dend_single <- df %>% dist %>% hclust("single") %>% as.dendrogram
+dend_average <- df %>% dist %>% hclust("average") %>% as.dendrogram
+dend_centroid <- df %>% dist %>% hclust("centroid") %>% as.dendrogram
+dend_ward <- df %>% dist %>% hclust("ward.D") %>% as.dendrogram
+dend_ward2 <- df %>% dist %>% hclust("ward.D2") %>% as.dendrogram
+```
+
+```{r}
+#Compute Correlation Matrix
+dend_list <- dendlist("Complete" = dend_complete, "Single" = dend_single, "Average" = dend_average, "Centroid" = dend_centroid, "Ward" = dend_ward, "Ward2" = dend_ward2)
+cors <- cor.dendlist(dend_list)
+
+#Print correlation matrix
+round(cors, 2)
+```
+```{r}
+#Visualize the correlation matrix using corrplot package
+library(corrplot)
+
+corrplot(cors, "pie", "lower")
+```
+
+
+
 
 
 ```{r}
 fviz_dend(res.hc, k = 5, # Cut in four groups
           cex = 0.5, # label size
-          k_colors = color_pallet,
+          palette = "jco",
           color_labels_by_k = TRUE, # color labels by groups
           rect = TRUE # Add rectangle around groups
 )
