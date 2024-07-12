@@ -6,6 +6,14 @@ output: html_document
 ---
 
 ```{r}
+library(tidyverse)
+library(factoextra)
+library(dendextend)
+```
+
+
+```{r}
+## Loading data
 data("mtcars")
 
 cars <- scale(mtcars)
@@ -16,7 +24,9 @@ head(cars, row = 6)
 ```{r}
 str(cars)
 ```
+## 1. Assessing Clustering Tendency
 
+#### 1.1. Statistical methods
 ```{r}
 library(hopkins)
 # Compute Hopkins statistic for cars dataset
@@ -24,14 +34,11 @@ set.seed(115)
 hopkins_val <- hopkins(cars, m = ceiling(nrow(cars) / 10))
 hopkins_val
 ```
-```{r}
-hopkins_val <- hopkins(cars, m = ceiling(nrow(cars) / 10))
-hopkins_val
-```
 
 
 
-#### VAT
+
+#### 1.2. Visual methods
 ```{r}
 fviz_dist(dist(cars), show_labels = FALSE)+
 labs(title = "Cars data")
@@ -46,8 +53,8 @@ res.dist
 ```{r}
 as.matrix(res.dist)[1:6, 1:6]
 ```
-
-## single
+## 2. Applying Various Linkage methods
+#### 2.1. Single Linkage Method
 ```{r}
 hc_single <- hclust(d = res.dist, method = "single")
 hc_single
@@ -82,83 +89,93 @@ fviz_dend(hc_single, cex = 0.5,                # Increase the label size
 ```
 
 
-## complete
+#### 2.2. Complete Linkage Method
 ```{r}
 hc_complete <- hclust(d = res.dist, method = "complete")
 hc_complete
 ```
 
 ```{r}
-fviz_dend(hc_complete, cex = 0.5)
+fviz_dend(hc_complete, cex = 0.5,
+        main = "Complete Linkage Dendrogram") +
+        theme(axis.text.x = element_text(angle = 0, hjust = 2))
 ```
 ```{r}
 # Correlation between cophenetic distance and the original distance
 cor(res.dist, cophenetic(hc_complete))
 ```
 
-## average
+#### 2.3. Average Linkage Method
 ```{r}
 hc_average <- hclust(d = res.dist, method = "average")
 hc_average
 ```
 
 ```{r}
-fviz_dend(hc_average, cex = 0.5)
+fviz_dend(hc_average, cex = 0.5,
+        main = "Average Linkage Dendrogram") +
+        theme(axis.text.x = element_text(angle = 0, hjust = 2))
 ```
 
 ```{r}
 # Correlation between cophenetic distance and the original distance
-cor(res.dist, cophenetic(res.hc_average))
+cor(res.dist, cophenetic(hc_average))
 ```
-## centroid
+#### 2.4. Centroid Linkage Method
 ```{r}
 hc_centroid <- hclust(d = res.dist, method = "ward.D2")
 hc_centroid
 ```
 ```{r}
-fviz_dend(hc_centroid, cex = 0.5)
+fviz_dend(hc_centroid, cex = 0.5,
+        main = "Centroid Linkage Dendrogram") +
+        theme(axis.text.x = element_text(angle = 0, hjust = 2))
 ```
 ```{r}
 # Correlation between cophenetic distance and the original distance
 cor(res.dist, cophenetic(hc_centroid))
 ```
 
-## ward.D
+#### 2.5. ward.D Method
 ```{r}
 hc_ward <- hclust(d = res.dist, method = "ward.D")
 hc_ward
 ```
 
 ```{r}
-fviz_dend(hc_ward, cex = 0.5)
+fviz_dend(hc_ward, cex = 0.5,
+        main = "Ward Dendrogram") +
+        theme(axis.text.x = element_text(angle = 0, hjust = 2))
 ```
 ```{r}
 # Correlation between cophenetic distance and the original distance
 cor(res.dist, cophenetic(hc_ward))
 ```
-## ward.D2
+#### 2.6. ward.D2 Method
 ```{r}
 hc_ward2 <- hclust(d = res.dist, method = "ward.D2")
 hc_ward2
 ```
 
 ```{r}
-fviz_dend(hc_ward2, cex = 0.5)
+fviz_dend(hc_ward2, cex = 0.5,
+        main = "Ward Dendrogram") +
+        theme(axis.text.x = element_text(angle = 0, hjust = 2))
 ```
 ```{r}
 # Correlation between cophenetic distance and the original distance
 cor(res.dist, cophenetic(hc_ward2))
 ```
 
-## Comparison Dendrograms
+## 3. Comparison Dendrograms
 ```{r}
 #Create multiple dendrograms by chaining
-dend_complete <- df %>% dist %>% hclust("complete") %>% as.dendrogram
-dend_single <- df %>% dist %>% hclust("single") %>% as.dendrogram
-dend_average <- df %>% dist %>% hclust("average") %>% as.dendrogram
-dend_centroid <- df %>% dist %>% hclust("centroid") %>% as.dendrogram
-dend_ward <- df %>% dist %>% hclust("ward.D") %>% as.dendrogram
-dend_ward2 <- df %>% dist %>% hclust("ward.D2") %>% as.dendrogram
+dend_complete <- cars %>% dist %>% hclust("complete") %>% as.dendrogram
+dend_single <- cars %>% dist %>% hclust("single") %>% as.dendrogram
+dend_average <- cars %>% dist %>% hclust("average") %>% as.dendrogram
+dend_centroid <- cars %>% dist %>% hclust("centroid") %>% as.dendrogram
+dend_ward <- cars %>% dist %>% hclust("ward.D") %>% as.dendrogram
+dend_ward2 <- cars %>% dist %>% hclust("ward.D2") %>% as.dendrogram
 ```
 
 ```{r}
@@ -176,7 +193,31 @@ library(corrplot)
 corrplot(cors, "pie", "lower")
 ```
 
+```{r}
+library("cluster")
+# Agglomerative Nesting (Hierarchical Clustering)
+res.agnes <- agnes(x = cars, # data matrix
+stand = TRUE, # Standardize the data
+metric = "euclidean", # metric for distance matrix
+method = "ward" # Linkage method
+)
+```
 
+```{r}
+# DIvisive ANAlysis Clustering
+res.diana <- diana(x = cars, # data matrix
+stand = TRUE, # standardize the data
+metric = "euclidean" # metric for distance matrix
+)
+```
+
+```{r}
+fviz_dend(res.agnes, cex = 0.6, k = 4)
+```
+
+```{r}
+fviz_dend(res.diana, cex = 0.6, k = 4)
+```
 
 
 
@@ -188,3 +229,4 @@ fviz_dend(res.hc, k = 5, # Cut in four groups
           rect = TRUE # Add rectangle around groups
 )
 ```
+
