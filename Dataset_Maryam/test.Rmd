@@ -17,6 +17,26 @@ head(cars, row = 6)
 str(cars)
 ```
 
+```{r}
+library(hopkins)
+# Compute Hopkins statistic for cars dataset
+set.seed(115)
+hopkins_val <- hopkins(cars, m = ceiling(nrow(cars) / 10))
+hopkins_val
+```
+```{r}
+hopkins_val <- hopkins(cars, m = ceiling(nrow(cars) / 10))
+hopkins_val
+```
+
+
+
+#### VAT
+```{r}
+fviz_dist(dist(cars), show_labels = FALSE)+
+labs(title = "Cars data")
+```
+
 
 ```{r}
 res.dist <- dist(cars, method = "euclidean")
@@ -36,18 +56,19 @@ hc_single
 # Set the labels to the car models
 hc_single$labels <- rownames(mtcars)
 
-par(mar = c(10, 4, 4, 2) + 0.1)
 
-# Plot the dendrogram with custom labels
-fviz_dend(hc_single, cex = 0.5, label_cex = 0.8,  main = "Single Linkage Dendrogram")
+fviz_dend(hc_single, cex = 0.5,
+        main = "Single Linkage Dendrogram") +
+        theme(axis.text.x = element_text(angle = 0, hjust = 2))
 ```
+
+
+
 ```{r}
 # Correlation between cophenetic distance and the original distance
 cor(res.dist, cophenetic(hc_single))
 ```
 ```{r}
-par(mar = c(10, 4, 4, 2) + 0.1)  # Adjust bottom margin
-
 # Plot the dendrogram with custom labels and increased visibility
 fviz_dend(hc_single, cex = 0.5,                # Increase the label size
           k = 4,                              # Number of clusters
