@@ -1,3 +1,9 @@
+
+## Loading data
+
+#### K-means: wdbc.data datasets
+#### Hierarchical: mtcars.csv dataset
+
 ```{r}
 data <- read.table("Dataset_Pat/wdbc.data", header = TRUE, sep = ",")
 data <- data[, -c(1, 2)]
@@ -14,6 +20,7 @@ library(factoextra)
 library(hopkins)
 library(ggplot2)
 library(cluster)
+library(clValid)
 ```
 
 ## 1. Assessing Clustering Tendency
@@ -25,6 +32,7 @@ set.seed(25)
 hopkins <- hopkins(data, m = ceiling(nrow(data) / 10))
 hopkins
 ```
+
 
 #### 1.2. Visual methods
 ```{r}
@@ -52,7 +60,7 @@ ggplot(pca_data, aes(x = PC1, y = PC2, color = Cluster)) +
   geom_point(alpha = 0.5) +
   labs(title = "PCA of WDBC Dataset with K-means Clustering", x = "Principal Component 1", y = "Principal Component 2") +
   theme_minimal() +
-  scale_color_manual(values = c("red", "blue", "green")) # Adjust the colors as needed
+  scale_color_manual(values = c("black", "blue", "skyblue")) # Adjust the colors as needed
 ```
 
 
@@ -80,7 +88,7 @@ labs(subtitle = "Gap statistic method")
 
 ```{r}
 set.seed(123)
-gap_stat <- cluster::clusGap(data, FUN = kmeans, nstart = 25, K.max = 10, B = 50)
+gap_stat <- clusGap(data, FUN = kmeans, nstart = 25, K.max = 10, B = 50)
 
 # Create a data frame for plotting
 gap_df <- as.data.frame(gap_stat$Tab)
@@ -121,10 +129,72 @@ km.res <- kmeans(data, 2, nstart = 25)
 
 ```{r}
 fviz_cluster(km.res, data = data,
-             palette = c( "lightblue", "purple"),
+             palette = c( "lightblue", "blue"),
              ellipse.type = "euclid", #Concentration ellipse
              star.plot = TRUE, #Add segments from centroids to items
              ggtheme = theme_minimal()
              )
 ```
+
+## 3. Internal Validation
+```{r}
+# Perform internal validation
+intern <- clValid(data, 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "internal")
+
+# Display the summary of the internal validation results
+summary(intern)
+```
+
+```{r}
+# Set graphical parameters to combine plots
+op <- par(no.readonly = TRUE)
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+
+# Plot the validation results without legends
+plot(intern, legend = FALSE)
+
+# Custom plot for the legend
+plot(nClusters(intern), measures(intern, "Dunn")[,,1], type = "n", axes = FALSE, xlab = "", ylab = "")
+legend("center", clusterMethods(intern), col = 1:9, lty = 1:9, pch = paste(1:9))
+
+# Reset graphical parameters
+par(op)
+```
+
+```{r}
+# Display the optimal scores and corresponding clustering methods
+optimal_scores <- summary(intern)$OptimalScores
+print(optimal_scores)
+
+```
+
+## 3.2. Stability Validation
+
+```{r}
+# Perform stability validation
+stab <- clValid(data, 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "stability")
+
+# Display the optimal scores using the optimalScores method
+optimal_scores_stab <- optimalScores(stab)
+print(optimal_scores_stab)
+
+```
+
+
+```{r}
+# Set graphical parameters to combine plots
+op <- par(no.readonly = TRUE)
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+
+# Plot the stability validation results without legends
+plot(stab, measure = c("APN", "AD", "ADM", "FOM"), legend = FALSE)
+
+# Custom plot for the legend
+plot(nClusters(stab), measures(stab, "APN")[,,1], type = "n", axes = FALSE, xlab = "", ylab = "")
+legend("center", clusterMethods(stab), col = 1:9, lty = 1:9, pch = paste(1:9))
+
+# Reset graphical parameters
+par(op)
+```
+
 
