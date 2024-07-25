@@ -12,6 +12,9 @@ library("dendextend")
 library("hopkins")
 library("corrplot")
 library("cluster")
+library("patchwork")
+
+set.seed(101)
 ```
 
 
@@ -19,7 +22,42 @@ library("cluster")
 ### K-means Clustering: wdbc
 ```{r}
 wdbc <- read.table("data/wdbc.data", header = T, sep = ",")
-wdbc
+head(wdbc)
+```
+
+## Correctly labeling the columns
+```{r}
+correct_column_names <- c(
+  "ID", "Diagnosis", "radius1", "texture1",
+  "perimeter1", "area1", "smoothness1", "compactness1",
+  "concavity1", "concave_points1", "symmetry1", "fractal_dimension1",
+  "radius2", "texture2", "perimeter2", "area2",
+  "smoothness2", "compactness2", "concavity2", "concave_points2",
+  "symmetry2", "fractal_dimension2", "radius3", "texture3",
+  "perimeter3", "area3", "smoothness3", "compactness3",
+  "concavity3", "concave_points3", "symmetry3", "fractal_dimension3"
+)
+
+colnames(wdbc) <- correct_column_names
+head(wdbc)
+```
+
+## Pre-processing and Normalizing the data
+```{r}
+wdbc_numerical <- wdbc[, -c(1, 2)]
+
+wdbc_scaled <- data.frame(scale(wdbc_numerical))
+rownames(wdbc_scaled) <- wdbc$ID
+wdbc <- wdbc_scaled
+head(wdbc)
+```
+
+```{r}
+str(wdbc)
+```
+
+```{r}
+rownames(wdbc)
 ```
 
 ### Hierarchical Clustering: mtcars
@@ -31,11 +69,11 @@ head(mtcars)
 ## Pre-processing and Normalizing the data
 ```{r}
 mtcars_categorical <- data.frame(
-  cyl = factor(mtcars$cyl),
-  vs = factor(mtcars$vs),
-  am = factor(mtcars$am),
-  gear = factor(mtcars$gear),
-  carb = factor(mtcars$carb)
+  cyl = factor(mtcars$cyl, ordered = T, levels = c(4, 6, 8)),
+  vs = mtcars$vs,
+  am = mtcars$am,
+  gear = factor(mtcars$gear, ordered = T, levels = c(3, 4, 5)),
+  carb = factor(mtcars$carb, ordered = T, levels = c(1, 2, 3, 4, 6, 8))
 )
 
 mtcars_numerical <- data.frame(
@@ -49,9 +87,10 @@ mtcars_numerical <- data.frame(
 
 mtcars_numerical_scaled <- data.frame(scale(mtcars_numerical))
 
-cars <- cbind(mtcars_numerical_scaled, mtcars_categorical)
-rownames(cars) <- mtcars$model
-head(cars)
+mtcars_joined <- cbind(mtcars_numerical_scaled, mtcars_categorical)
+rownames(mtcars_joined) <- mtcars$model
+mtcars <- mtcars_joined
+head(mtcars)
 ```
 
 
@@ -65,115 +104,216 @@ rownames(cars)
 ```
 
 
-
-
 ## 1. Assessing Clustering Tendency
-#### 1.1. Statistical methods
-```{r}
-# Compute Hopkins statistic for cars dataset
-set.seed(101)
+### 1.1. Statistical Method
 
-hopkins_val <- hopkins(mtcars_numerical_scaled, m = ceiling(nrow(mtcars_numerical_scaled) / 10))
-hopkins_val
+#### Hopkins Statistic: wdbc
+```{r}
+set.seed(25)
+
+hopkins_wdbc <- hopkins(wdbc, m = ceiling(nrow(wdbc) / 10))
+hopkins_wdbc
 ```
 
+#### Hopkins Statistic: mtcars
+```{r}
+set.seed(25)
 
-#### 1.2. Visual methods
+hopkins_mtcars <- hopkins(mtcars, m = ceiling(nrow(mtcars) / 10))
+hopkins_mtcars
+```
+
+### 1.2. Visual Method
+
+#### VAT: wdbc
 ```{r}
 fviz_dist(
-  dist(cars),
+  dist(wdbc),
   show_labels = FALSE
-) + labs(title = "Cars Data")
+) + labs(title = "wdbc")
 ```
 
-## 2. Applying Various Linkage methods
-#### 2.1. Single Linkage Method
+#### VAT: mtcars
 ```{r}
-res.dist <- dist(cars, method = "euclidean")
-res.dist
+fviz_dist(
+  dist(mtcars),
+  show_labels = FALSE
+) + labs(title = "mtcar")
+```
+
+#### PCA: wdbc
+```{r}
+fviz_pca_ind(
+  prcomp(wdbc),
+  title = "PCA - wdbc",
+  palette = "jco",
+  geom = "point",
+  ggtheme = theme_classic(),
+  legend = "bottom"
+)
+```
+
+#### PCA: mtcars
+```{r}
+fviz_pca_ind(
+  prcomp(mtcars),
+  title = "PCA - mtcars",
+  palette = "jco",
+  geom = "point",
+  ggtheme = theme_classic(),
+  legend = "bottom"
+)
+```
+
+## 2. Finding Optimal value of k
+
+### Dataset: wdbc
+#### Elbow Method: k-means
+```{r}
+wdbc_elbow_kmeans <- fviz_nbclust(wdbc, kmeans, method = "wss") + geom_vline(xintercept = 2, linetype = 2)
+wdbc_elbow_kmeans
+```
+
+#### Silhouette Width: k-means and pam
+```{r}
+wdbc_silhouette_kmeans <- fviz_nbclust(wdbc, kmeans, method = "silhouette")
+wdbc_silhouette_pam <- fviz_nbclust(wdbc, pam, method = "silhouette")
+
+wdbc_silhouette_kmeans +
+  wdbc_silhouette_pam +
+  plot_layout(ncol = 2) # TODO: adjust size
+```
+
+#### Gap Statistic: k-means and pam
+```{r}
+wdbc_gap_kmeans <- fviz_nbclust(wdbc, kmeans, nstart = 50, method = "gap_stat", nboot = 50)
+wdbc_gap_pam <- fviz_nbclust(wdbc, pam, nstart = 50, method = "gap_stat", nboot = 50)
+
+wdbc_gap_kmeans +
+  wdbc_gap_pam +
+  plot_layout(ncol = 2)
+```
+
+TODO: the positive negative bar plot
+
+### Dataset: mtcars
+TODO: dendrogram and elbow method
+```{r}
+wdbc_gap_hierarchical <- fviz_nbclust(mtcars, hcut, nstart = 50, method = "gap_stat", nboot = 500)
+wdbc_gap_hierarchical
+```
+
+## 3. K-Means using wdbc
+```{r}
+set.seed(101)
+
+color_palette <- c("red", "blue", "green", "pink", "purple", "lightblue")
+
+km.res <- kmeans(wdbc, 2, nstart = 100)
+
+fviz_cluster(
+  km.res,
+  data = wdbc,
+  palette = color_palette,
+  ellipse.type = "convex",
+  star.plot = TRUE,
+  ellipse = TRUE,
+  geom = "point",
+  ggtheme = theme_minimal()
+)
 ```
 
 
+## 4. PAM using wdbc
 ```{r}
-as.matrix(res.dist)[1:6, 1:6]
+set.seed(101)
+
+pam.res <- pam(wdbc, 2)
+
+fviz_cluster(
+  pam.res,
+  data = wdbc,
+  palette = color_palette,
+  ellipse.type = "convex",
+  star.plot = TRUE,
+  ellipse = TRUE,
+  geom = "point",
+  ggtheme = theme_minimal()
+)
 ```
 
+## 5. Hierarchical Clustering using mtcars
 
+### 5.1. Applying Various Linkage Methods
+#### 5.1.1. Single Linkage Method
 ```{r}
-hc_single <- hclust(d = res.dist, method = "single")
-hc_single
-```
+mtcars$cyl <- as.factor(mtcars$cyl)
+mtcars$vs <- as.factor(mtcars$vs)
+mtcars$am <- as.factor(mtcars$am)
+mtcars$gear <- as.factor(mtcars$gear)
+mtcars$carb <- as.factor(mtcars$carb)
 
-
-```{r}
-# Set the labels to the car models
-# hc_single$labels <- rownames(mtcars)
+res.dist.gower <- daisy(mtcars, metric = "gower")
+hc_single <- hclust(d = res.dist.gower, method = "single")
 
 fviz_dend(
   hc_single,
-  cex = 0.5,
+  cex = 0.5, # Increase the label size
+  k = 2, # Number of clusters
+  k_colors = "jco", # Color palette for clusters
+  rect = TRUE,
+  rect_border = "jco", # Add rectangle around clusters
+  rect_fill = TRUE, # Fill the rectangle
+  label_cols = "black", # Color of labels
+  label_cex = 0.5, # Font size of labels
   main = "Single Linkage Dendrogram"
-) + theme(axis.text.x = element_text(angle = 0, hjust = 2))
+) + theme_minimal()
 ```
 
-
+#### 5.1.2. Correlation between cophenetic distance and the original distance
 ```{r}
-# Correlation between cophenetic distance and the original distance
-cor(res.dist, cophenetic(hc_single))
+cor(res.dist.gower, cophenetic(hc_single))
 ```
 
-
+#### 5.2.1. Complete Linkage Method
 ```{r}
-# Plot the dendrogram with custom labels and increased visibility
-fviz_dend(
-  hc_single,
-  cex = 0.5,                # Increase the label size
-  k = 4,                              # Number of clusters
-  k_colors = "jco",                   # Color palette for clusters
-  rect = TRUE, rect_border = "jco",   # Add rectangle around clusters
-  rect_fill = TRUE,                   # Fill the rectangle
-  label_cols = "black",               # Color of labels
-  label_cex = 0.5,                    # Font size of labels
-  main = "Single Linkage Dendrogram"
-) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
-```
+hc_complete <- hclust(d = res.dist.gower, method = "complete")
 
-
-#### 2.2. Complete Linkage Method
-```{r}
-hc_complete <- hclust(d = res.dist, method = "complete")
-hc_complete
-```
-
-
-```{r}
 fviz_dend(
   hc_complete,
   cex = 0.5,
+  k = 2,
+  k_colors = "jco",
+  rect = TRUE,
+  rect_border = "jco",
+  rect_fill = TRUE,
+  label_cols = "black",
+  label_cex = 0.5,
   main = "Complete Linkage Dendrogram"
-) + theme(axis.text.x = element_text(angle = 0, hjust = 2))
+) + theme_minimal()
 ```
 
-
+#### 5.2.2. Correlation between cophenetic distance and the original distance
 ```{r}
-# Correlation between cophenetic distance and the original distance
-cor(res.dist, cophenetic(hc_complete))
+cor(res.dist.gower, cophenetic(hc_complete))
 ```
 
-
-#### 2.3. Average Linkage Method
+#### 5.3.1. Average Linkage Method
 ```{r}
-hc_average <- hclust(d = res.dist, method = "average")
-hc_average
-```
+hc_average <- hclust(d = res.dist.gower, method = "average")
 
-
-```{r}
 fviz_dend(
   hc_average,
   cex = 0.5,
+  k = 2,
+  k_colors = "jco",
+  rect = TRUE,
+  rect_border = "jco",
+  rect_fill = TRUE,
+  label_cols = "black",
+  label_cex = 0.5,
   main = "Average Linkage Dendrogram"
-) + theme(axis.text.x = element_text(angle = 0, hjust = 2))
+) + theme_minimal()
 ```
 
 
