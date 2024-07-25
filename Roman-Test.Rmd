@@ -13,6 +13,7 @@ library("hopkins")
 library("corrplot")
 library("cluster")
 library("patchwork")
+library("clValid")
 
 set.seed(101)
 ```
@@ -65,12 +66,20 @@ head(mtcars)
 
 ## Pre-processing and Normalizing the data
 ```{r}
+# mtcars_categorical <- data.frame(
+#   cyl = factor(mtcars$cyl, ordered = T, levels = c(4, 6, 8)),
+#   vs = mtcars$vs,
+#   am = mtcars$am,
+#   gear = factor(mtcars$gear, ordered = T, levels = c(3, 4, 5)),
+#   carb = factor(mtcars$carb, ordered = T, levels = c(1, 2, 3, 4, 6, 8))
+# )
+
 mtcars_categorical <- data.frame(
-  cyl = factor(mtcars$cyl, ordered = T, levels = c(4, 6, 8)),
+  cyl = mtcars$cyl,
   vs = mtcars$vs,
   am = mtcars$am,
-  gear = factor(mtcars$gear, ordered = T, levels = c(3, 4, 5)),
-  carb = factor(mtcars$carb, ordered = T, levels = c(1, 2, 3, 4, 6, 8))
+  gear = mtcars$gear,
+  carb = mtcars$carb
 )
 
 mtcars_numerical <- data.frame(
@@ -92,12 +101,12 @@ head(mtcars)
 
 
 ```{r}
-str(cars)
+str(mtcars)
 ```
 
 
 ```{r}
-rownames(cars)
+rownames(mtcars)
 ```
 
 
@@ -184,8 +193,8 @@ wdbc_silhouette_kmeans +
 
 #### Gap Statistic: k-means and pam
 ```{r}
-wdbc_gap_kmeans <- fviz_nbclust(wdbc, kmeans, nstart = 50, method = "gap_stat", nboot = 50)
-wdbc_gap_pam <- fviz_nbclust(wdbc, pam, nstart = 50, method = "gap_stat", nboot = 50)
+wdbc_gap_kmeans <- fviz_nbclust(wdbc, kmeans, nstart = 50, method = "gap_stat", nboot = 500)
+wdbc_gap_pam <- fviz_nbclust(wdbc, pam, nstart = 50, method = "gap_stat", nboot = 800)
 
 wdbc_gap_kmeans +
   wdbc_gap_pam +
@@ -240,31 +249,23 @@ fviz_cluster(
 )
 ```
 
-
-
 ## 3. Internal Validation
 ```{r}
-# Perform internal validation
 intern_wdbc <- clValid(wdbc, 2:6, clMethods = c("kmeans", "hierarchical", "pam"), validation = "internal")
 
-# Display the summary of the internal validation results
 summary(intern_wdbc)
 ```
 
 
 ```{r}
-# Set graphical parameters to combine plots
 op <- par(no.readonly = TRUE)
 par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
 
-# Plot the validation results without legends
 plot(intern_wdbc, legend = FALSE)
 
-# Custom plot for the legend
-plot(nClusters(intern_wdbc), measures(intern_wdbc, "Dunn")[,,1], type = "n", axes = FALSE, xlab = "", ylab = "")
+plot(nClusters(intern_wdbc), measures(intern_wdbc, "Dunn")[, , 1], type = "n", axes = FALSE, xlab = "", ylab = "")
 legend("center", clusterMethods(intern_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
 
-# Reset graphical parameters
 par(op)
 ```
 
@@ -290,30 +291,20 @@ par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
 plot(stab_wdbc, measure = c("APN", "AD", "ADM", "FOM"), legend = FALSE)
 
 # Custom plot for the legend
-plot(nClusters(stab_wdbc), measures(stab_wdbc, "APN")[,,1], type = "n", axes = FALSE, xlab = "", ylab = "")
+plot(nClusters(stab_wdbc), measures(stab_wdbc, "APN")[, , 1], type = "n", axes = FALSE, xlab = "", ylab = "")
 legend("center", clusterMethods(stab_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
 
 # Reset graphical parameters
 par(op)
 ```
 
-
-
-
-
 ## 5. Hierarchical Clustering using mtcars
 
 ### 5.1. Applying Various Linkage Methods
 #### 5.1.1. Single Linkage Method
 ```{r}
-mtcars$cyl <- as.factor(mtcars$cyl)
-mtcars$vs <- as.factor(mtcars$vs)
-mtcars$am <- as.factor(mtcars$am)
-mtcars$gear <- as.factor(mtcars$gear)
-mtcars$carb <- as.factor(mtcars$carb)
-
-res.dist.gower <- daisy(mtcars, metric = "gower")
-hc_single <- hclust(d = res.dist.gower, method = "single")
+res.dist <- dist(mtcars, method = "manhattan")
+hc_single <- hclust(d = res.dist, method = "single")
 
 fviz_dend(
   hc_single,
@@ -331,12 +322,12 @@ fviz_dend(
 
 #### 5.1.2. Correlation between cophenetic distance and the original distance
 ```{r}
-cor(res.dist.gower, cophenetic(hc_single))
+cor(res.dist, cophenetic(hc_single))
 ```
 
 #### 5.2.1. Complete Linkage Method
 ```{r}
-hc_complete <- hclust(d = res.dist.gower, method = "complete")
+hc_complete <- hclust(d = res.dist, method = "complete")
 
 fviz_dend(
   hc_complete,
@@ -354,12 +345,12 @@ fviz_dend(
 
 #### 5.2.2. Correlation between cophenetic distance and the original distance
 ```{r}
-cor(res.dist.gower, cophenetic(hc_complete))
+cor(res.dist, cophenetic(hc_complete))
 ```
 
 #### 5.3.1. Average Linkage Method
 ```{r}
-hc_average <- hclust(d = res.dist.gower, method = "average")
+hc_average <- hclust(d = res.dist, method = "average")
 
 fviz_dend(
   hc_average,
@@ -377,18 +368,16 @@ fviz_dend(
 
 
 ```{r}
-# Correlation between cophenetic distance and the original distance
-cor(res.dist.gower, cophenetic(hc_average))
+cor(res.dist, cophenetic(hc_average))
 ```
 
 
-#### 2.4. Centroid Linkage Method
+#### 2.4. Ward D2 Linkage Method
 ```{r}
-hc_centroid <- hclust(d = res.dist.gower, method = "ward.D2")
-hc_centroid
+hc_ward_d2 <- hclust(d = res.dist, method = "ward.D2")
 
 fviz_dend(
-  hc_centroid,
+  hc_ward_d2,
   cex = 0.5,
   k = 2,
   k_colors = "jco",
@@ -397,25 +386,22 @@ fviz_dend(
   rect_fill = TRUE,
   label_cols = "black",
   label_cex = 0.5,
-  main = "Average Centroid Dendrogram"
+  main = "Ward D2 Linkage Dendrogram"
 ) + theme_minimal()
 ```
 
-
-
-```{r}
 # Correlation between cophenetic distance and the original distance
-cor(res.dist.gower, cophenetic(hc_centroid))
+```{r}
+cor(res.dist, cophenetic(hc_centroid))
 ```
 
 
-#### 2.5. ward.D Method
+#### 2.5. Ward D Method
 ```{r}
-hc_ward <- hclust(d = res.dist.gower, method = "ward.D")
-hc_ward
+hc_ward_d <- hclust(d = res.dist, method = "ward.D")
 
 fviz_dend(
-  hc_ward,
+  hc_ward_d,
   cex = 0.5,
   k = 2,
   k_colors = "jco",
@@ -424,25 +410,22 @@ fviz_dend(
   rect_fill = TRUE,
   label_cols = "black",
   label_cex = 0.5,
-  main = "Average ward.D Dendrogram"
+  main = "Ward D Linkage Dendrogram"
 ) + theme_minimal()
 ```
 
-
-
-```{r}
 # Correlation between cophenetic distance and the original distance
-cor(res.dist.gower, cophenetic(hc_ward))
+```{r}
+cor(res.dist, cophenetic(hc_ward_d))
 ```
 
 
 #### 2.6. ward.D2 Method
 ```{r}
-hc_ward2 <- hclust(d = res.dist.gower, method = "ward.D2")
-hc_ward2
+hc_ward_d2 <- hclust(d = res.dist, method = "ward.D2")
 
 fviz_dend(
-  hc_ward2,
+  hc_ward_d2,
   cex = 0.5,
   k = 2,
   k_colors = "jco",
@@ -455,18 +438,13 @@ fviz_dend(
 ) + theme_minimal()
 ```
 
-
-
-
-```{r}
 # Correlation between cophenetic distance and the original distance
-cor(res.dist.gower, cophenetic(hc_ward2))
+```{r}
+cor(res.dist, cophenetic(hc_ward_d2))
 ```
-
 
 ## 3. Comparison between Dendrogram
 ```{r}
-# Create multiple dendrograms by chaining
 dend_complete <- cars %>%
   dist %>%
   hclust("complete") %>%
@@ -495,7 +473,6 @@ dend_ward2 <- cars %>%
 
 
 ```{r}
-# Compute Correlation Matrix
 dend_list <- dendlist(
   "Complete" = dend_complete,
   "Single" = dend_single,
@@ -507,11 +484,10 @@ dend_list <- dendlist(
 
 cors <- cor.dendlist(dend_list)
 
-# Print correlation matrix
 round(cors, 2)
 ```
-## Correlation matrix
 
+## Correlation matrix
 ```{r}
 # Visualize the correlation matrix using corrplot package
 corrplot(cors, "pie", "lower")
@@ -523,9 +499,11 @@ corrplot(cors, "pie", "lower")
 res.agnes <- agnes(
   x = cars, # data matrix
   stand = TRUE, # Standardize the data
-  metric = "gower", # metric for distance matrix
+  metric = "manhattan", # metric for distance matrix
   method = "ward" # Linkage method
 )
+
+fviz_dend(res.agnes, cex = 0.6, k = 2)
 ```
 
 
@@ -534,24 +512,16 @@ res.agnes <- agnes(
 res.diana <- diana(
   x = cars, # data matrix
   stand = TRUE, # standardize the data
-  metric = "gower" # metric for distance matrix
+  metric = "manhattan" # metric for distance matrix
 )
-```
 
-
-```{r}
-fviz_dend(res.agnes, cex = 0.6, k = 2)
-```
-
-
-```{r}
 fviz_dend(res.diana, cex = 0.6, k = 2)
 ```
 
 
 ```{r}
 fviz_dend(
-  hc_ward,
+  hc_ward_d,
   k = 2, # Cut in four groups
   cex = 0.5, # label size
   palette = "jco",
@@ -563,7 +533,7 @@ fviz_dend(
 ## 6. Internal Validation
 ```{r}
 # Perform internal validation
-intern_mtcars <- clValid(mtcars_numerical_scaled, 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "internal")
+intern_mtcars <- clValid(mtcars, 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "internal")
 
 # Display the summary of the internal validation results
 summary(intern_mtcars)
@@ -578,7 +548,7 @@ par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
 plot(intern_mtcars, legend = FALSE)
 
 # Custom plot for the legend
-plot(nClusters(intern_mtcars), measures(intern_mtcars, "Dunn")[,,1], type = "n", axes = FALSE, xlab = "", ylab = "")
+plot(nClusters(intern_mtcars), measures(intern_mtcars, "Dunn")[, , 1], type = "n", axes = FALSE, xlab = "", ylab = "")
 legend("center", clusterMethods(intern_mtcars), col = 1:9, lty = 1:9, pch = paste(1:9))
 
 # Reset graphical parameters
@@ -590,27 +560,21 @@ par(op)
 
 ```{r}
 # Perform stability validation
-stab_mtcars <- clValid(mtcars_numerical_scaled, 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "stability")
+stab_mtcars <- clValid(mtcars, 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "stability")
 
 # Display the optimal scores using the optimalScores method
 optimal_scores_stab_mtcars <- optimalScores(stab_mtcars)
-print(optimal_scores_stab_mtcars)
-
+optimal_scores_stab_mtcars
 ```
 
 ```{r}
-# Set graphical parameters to combine plots
-op <- par(no.readonly = TRUE)
 par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
 
-# Plot the stability validation results without legends
-plot(stab_mtcars, measure = c("APN", "AD", "ADM", "FOM"), legend = FALSE)
+plot(stab_mtcars, measure = c("APN", "AD", "ADM", "FOM"), legend = F)
 
-# Custom plot for the legend
-plot(nClusters(stab_mtcars), measures(stab_mtcars, "APN")[,,1], type = "n", axes = FALSE, xlab = "", ylab = "")
+plot(nClusters(stab_mtcars), measures(stab_mtcars, "APN")[, , 1], type = "n", axes = F, xlab = "", ylab = "")
 legend("center", clusterMethods(stab_mtcars), col = 1:9, lty = 1:9, pch = paste(1:9))
 
-# Reset graphical parameters
 par(op)
 ```
 

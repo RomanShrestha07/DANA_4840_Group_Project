@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="648550f5-50e6-4136-94de-c940c6745bcf" name="Changes" comment="- added some files, minor fixes to the code">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Roman-Test.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/Roman-Test.Rmd" afterDir="false" />
-    </list>
+    <list default="true" id="648550f5-50e6-4136-94de-c940c6745bcf" name="Changes" comment="- code changes" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -75,6 +72,7 @@
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
     <MESSAGE value="- added some files, minor fixes to the code" />
-    <option name="LAST_COMMIT_MESSAGE" value="- added some files, minor fixes to the code" />
+    <MESSAGE value="- code changes" />
+    <option name="LAST_COMMIT_MESSAGE" value="- code changes" />
   </component>
 </project>
