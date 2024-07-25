@@ -26,7 +26,7 @@ wdbc <- read.table("data/wdbc.data", header = T, sep = ",")
 head(wdbc)
 ```
 
-## Correctly labeling the columns
+#### Correctly labeling the columns
 ```{r}
 correct_column_names <- c(
   "ID", "Diagnosis", "radius1", "texture1",
@@ -43,7 +43,7 @@ colnames(wdbc) <- correct_column_names
 head(wdbc)
 ```
 
-## Pre-processing and Normalizing the data
+#### Pre-processing and Normalizing: wdbc
 ```{r}
 wdbc_numerical <- wdbc[, -c(1, 2)]
 
@@ -53,10 +53,10 @@ wdbc <- wdbc_scaled
 head(wdbc)
 ```
 
+#### Checking the internal structure: wdbc
 ```{r}
 str(wdbc)
 ```
-
 
 ### Hierarchical Clustering: mtcars
 ```{r}
@@ -64,15 +64,17 @@ mtcars <- read.csv("data/mtcars.csv", header = T, sep = ",")
 head(mtcars)
 ```
 
-## Pre-processing and Normalizing the data
+#### Pre-processing and Normalizing: mtcars
 ```{r}
-# mtcars_categorical <- data.frame(
-#   cyl = factor(mtcars$cyl, ordered = T, levels = c(4, 6, 8)),
-#   vs = mtcars$vs,
-#   am = mtcars$am,
-#   gear = factor(mtcars$gear, ordered = T, levels = c(3, 4, 5)),
-#   carb = factor(mtcars$carb, ordered = T, levels = c(1, 2, 3, 4, 6, 8))
-# )
+"
+mtcars_categorical <- data.frame(
+  cyl = factor(mtcars$cyl, ordered = T, levels = c(4, 6, 8)),
+  vs = mtcars$vs,
+  am = mtcars$am,
+  gear = factor(mtcars$gear, ordered = T, levels = c(3, 4, 5)),
+  carb = factor(mtcars$carb, ordered = T, levels = c(1, 2, 3, 4, 6, 8))
+)
+"
 
 mtcars_categorical <- data.frame(
   cyl = mtcars$cyl,
@@ -99,12 +101,12 @@ mtcars <- mtcars_joined
 head(mtcars)
 ```
 
-
+#### Checking the internal structure: mtcars
 ```{r}
 str(mtcars)
 ```
 
-
+#### Checking the column index
 ```{r}
 rownames(mtcars)
 ```
@@ -217,7 +219,7 @@ color_palette <- c("red", "blue", "green", "pink", "purple", "lightblue")
 
 km.res <- kmeans(wdbc, 2, nstart = 100)
 
-fviz_cluster(
+kmeans_graph <- fviz_cluster(
   km.res,
   data = wdbc,
   palette = color_palette,
@@ -225,6 +227,7 @@ fviz_cluster(
   star.plot = TRUE,
   ellipse = TRUE,
   geom = "point",
+  main = "K-Means Cluster Plot",
   ggtheme = theme_minimal()
 )
 ```
@@ -236,7 +239,7 @@ set.seed(101)
 
 pam.res <- pam(wdbc, 2)
 
-fviz_cluster(
+pam_graph <- fviz_cluster(
   pam.res,
   data = wdbc,
   palette = color_palette,
@@ -244,9 +247,16 @@ fviz_cluster(
   star.plot = TRUE,
   ellipse = TRUE,
   geom = "point",
+  main = "PAM Cluster Plot",
   ggtheme = theme_minimal()
 )
 ```
+
+
+```{r}
+kmeans_graph + pam_graph + plot_layout(ncol = 1)
+```
+
 
 ## 3. Internal Validation
 ```{r}
@@ -269,29 +279,20 @@ par(op)
 
 ## 3.2. Stability Validation
 ```{r}
-# Perform stability validation
-stab_wdbc <- clValid(wdbc, 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "stability")
+stab_wdbc <- clValid(wdbc, nClust = 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "stability")
 
-# Display the optimal scores using the optimalScores method
 optimal_scores_stab <- optimalScores(stab_wdbc)
 optimal_scores_stab
 ```
 
 
 ```{r}
-# Set graphical parameters to combine plots
-op <- par(no.readonly = TRUE)
 par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
 
-# Plot the stability validation results without legends
 plot(stab_wdbc, measure = c("APN", "AD", "ADM", "FOM"), legend = FALSE)
 
-# Custom plot for the legend
 plot(nClusters(stab_wdbc), measures(stab_wdbc, "APN")[, , 1], type = "n", axes = FALSE, xlab = "", ylab = "")
-legend("center", clusterMethods(stab_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
-
-# Reset graphical parameters
-par(op)
+legend("left", clusterMethods(stab_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
 ```
 
 ## 5. Hierarchical Clustering using mtcars
@@ -302,7 +303,7 @@ par(op)
 res.dist <- dist(mtcars, method = "manhattan")
 hc_single <- hclust(d = res.dist, method = "single")
 
-fviz_dend(
+single_dendrogram <- fviz_dend(
   hc_single,
   cex = 0.5, # Increase the label size
   k = 2, # Number of clusters
@@ -325,7 +326,7 @@ cor(res.dist, cophenetic(hc_single))
 ```{r}
 hc_complete <- hclust(d = res.dist, method = "complete")
 
-fviz_dend(
+complete_dendrogram <- fviz_dend(
   hc_complete,
   cex = 0.5,
   k = 2,
@@ -348,7 +349,7 @@ cor(res.dist, cophenetic(hc_complete))
 ```{r}
 hc_average <- hclust(d = res.dist, method = "average")
 
-fviz_dend(
+average_dendrogram <- fviz_dend(
   hc_average,
   cex = 0.5,
   k = 2,
@@ -372,7 +373,7 @@ cor(res.dist, cophenetic(hc_average))
 ```{r}
 hc_ward_d <- hclust(d = res.dist, method = "ward.D")
 
-fviz_dend(
+ward_d_dendrogram <- fviz_dend(
   hc_ward_d,
   cex = 0.5,
   k = 2,
@@ -396,7 +397,7 @@ cor(res.dist, cophenetic(hc_ward_d))
 ```{r}
 hc_ward_d2 <- hclust(d = res.dist, method = "ward.D2")
 
-fviz_dend(
+ward_d2_dendrogram <- fviz_dend(
   hc_ward_d2,
   cex = 0.5,
   k = 2,
@@ -409,6 +410,18 @@ fviz_dend(
   main = "Ward D2 Linkage Dendrogram"
 ) + theme_minimal()
 ```
+
+
+```{r}
+single_dendrogram +
+  complete_dendrogram +
+  average_dendrogram +
+  ward_d_dendrogram +
+  ward_d2_dendrogram +
+  plot_layout(ncol = 2)
+```
+
+
 
 # Correlation between cophenetic distance and the original distance
 ```{r}
@@ -459,15 +472,13 @@ cors <- cor.dendlist(dend_list)
 round(cors, 2)
 ```
 
-## Correlation matrix
+## Visualizing the Correlation matrix
 ```{r}
-# Visualize the correlation matrix using corrplot package
 corrplot(cors, "pie", "lower")
 ```
 
-
+# Agglomerative Nesting (Hierarchical Clustering) Analysis
 ```{r}
-# Agglomerative Nesting (Hierarchical Clustering)
 res.agnes <- agnes(
   x = mtcars, # data matrix
   stand = TRUE, # Standardize the data
@@ -475,7 +486,7 @@ res.agnes <- agnes(
   method = "ward" # Linkage method
 )
 
-fviz_dend(
+nesting_dendrogram <- fviz_dend(
   res.agnes,
   cex = 0.5,
   k = 2,
@@ -489,16 +500,15 @@ fviz_dend(
 ) + theme_minimal()
 ```
 
-
-```{r}
 # Divisive Analysis Clustering
+```{r}
 res.diana <- diana(
   x = mtcars, # data matrix
   stand = TRUE, # standardize the data
   metric = "manhattan" # metric for distance matrix
 )
 
-fviz_dend(
+divisive_dendrogram <- fviz_dend(
   res.diana,
   cex = 0.5,
   k = 2,
@@ -512,29 +522,28 @@ fviz_dend(
 ) + theme_minimal()
 ```
 
+
+```{r}
+nesting_dendrogram +
+  divisive_dendrogram +
+  plot_layout(ncol = 2)
+```
+
+
 ## 6. Internal Validation
 ```{r}
-# Perform internal validation
 intern_mtcars <- clValid(mtcars, 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "internal")
 
-# Display the summary of the internal validation results
 summary(intern_mtcars)
 ```
 
 ```{r}
-# Set graphical parameters to combine plots
-op <- par(no.readonly = TRUE)
 par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
 
-# Plot the validation results without legends
 plot(intern_mtcars, legend = FALSE)
 
-# Custom plot for the legend
 plot(nClusters(intern_mtcars), measures(intern_mtcars, "Dunn")[, , 1], type = "n", axes = FALSE, xlab = "", ylab = "")
 legend("center", clusterMethods(intern_mtcars), col = 1:9, lty = 1:9, pch = paste(1:9))
-
-# Reset graphical parameters
-par(op)
 ```
 
 
@@ -559,7 +568,4 @@ legend("center", clusterMethods(stab_mtcars), col = 1:9, lty = 1:9, pch = paste(
 
 par(op)
 ```
-
-
-
 
