@@ -1,0 +1,565 @@
+---
+title: "DANA 4840 Group Project"
+author: ""
+output: html_document
+---
+
+## Loading the libraries
+```{r}
+library("tidyverse")
+library("factoextra")
+library("dendextend")
+library("hopkins")
+library("corrplot")
+library("cluster")
+library("patchwork")
+library("clValid")
+
+set.seed(101)
+```
+
+
+## Loading the Datasets
+### K-means Clustering: wdbc
+```{r}
+wdbc <- read.table("data/wdbc.data", header = T, sep = ",")
+head(wdbc)
+```
+
+## Correctly labeling the columns
+```{r}
+correct_column_names <- c(
+  "ID", "Diagnosis", "radius1", "texture1",
+  "perimeter1", "area1", "smoothness1", "compactness1",
+  "concavity1", "concave_points1", "symmetry1", "fractal_dimension1",
+  "radius2", "texture2", "perimeter2", "area2",
+  "smoothness2", "compactness2", "concavity2", "concave_points2",
+  "symmetry2", "fractal_dimension2", "radius3", "texture3",
+  "perimeter3", "area3", "smoothness3", "compactness3",
+  "concavity3", "concave_points3", "symmetry3", "fractal_dimension3"
+)
+
+colnames(wdbc) <- correct_column_names
+head(wdbc)
+```
+
+## Pre-processing and Normalizing the data
+```{r}
+wdbc_numerical <- wdbc[, -c(1, 2)]
+
+wdbc_scaled <- data.frame(scale(wdbc_numerical))
+rownames(wdbc_scaled) <- wdbc$ID
+wdbc <- wdbc_scaled
+head(wdbc)
+```
+
+```{r}
+str(wdbc)
+```
+
+
+### Hierarchical Clustering: mtcars
+```{r}
+mtcars <- read.csv("data/mtcars.csv", header = T, sep = ",")
+head(mtcars)
+```
+
+## Pre-processing and Normalizing the data
+```{r}
+# mtcars_categorical <- data.frame(
+#   cyl = factor(mtcars$cyl, ordered = T, levels = c(4, 6, 8)),
+#   vs = mtcars$vs,
+#   am = mtcars$am,
+#   gear = factor(mtcars$gear, ordered = T, levels = c(3, 4, 5)),
+#   carb = factor(mtcars$carb, ordered = T, levels = c(1, 2, 3, 4, 6, 8))
+# )
+
+mtcars_categorical <- data.frame(
+  cyl = mtcars$cyl,
+  vs = mtcars$vs,
+  am = mtcars$am,
+  gear = mtcars$gear,
+  carb = mtcars$carb
+)
+
+mtcars_numerical <- data.frame(
+  mpg = mtcars$mpg,
+  disp = mtcars$disp,
+  hp = mtcars$hp,
+  drat = mtcars$drat,
+  wt = mtcars$wt,
+  qsec = mtcars$qsec
+)
+
+mtcars_numerical_scaled <- data.frame(scale(mtcars_numerical))
+
+mtcars_joined <- cbind(mtcars_numerical_scaled, mtcars_categorical)
+rownames(mtcars_joined) <- mtcars$model
+mtcars <- mtcars_joined
+head(mtcars)
+```
+
+
+```{r}
+str(mtcars)
+```
+
+
+```{r}
+rownames(mtcars)
+```
+
+
+## 1. Assessing Clustering Tendency
+### 1.1. Statistical Method
+
+#### Hopkins Statistic: wdbc
+```{r}
+set.seed(25)
+
+hopkins_wdbc <- hopkins(wdbc, m = ceiling(nrow(wdbc) / 10))
+hopkins_wdbc
+```
+
+#### Hopkins Statistic: mtcars
+```{r}
+set.seed(25)
+
+hopkins_mtcars <- hopkins(mtcars, m = ceiling(nrow(mtcars) / 10))
+hopkins_mtcars
+```
+
+### 1.2. Visual Method
+
+#### VAT: wdbc
+```{r}
+fviz_dist(
+  dist(wdbc),
+  show_labels = FALSE
+) + labs(title = "wdbc")
+```
+
+#### VAT: mtcars
+```{r}
+fviz_dist(
+  dist(mtcars),
+  show_labels = FALSE
+) + labs(title = "mtcar")
+```
+
+#### PCA: wdbc
+```{r}
+fviz_pca_ind(
+  prcomp(wdbc),
+  title = "PCA - wdbc",
+  palette = "jco",
+  geom = "point",
+  ggtheme = theme_classic(),
+  legend = "bottom"
+)
+```
+
+#### PCA: mtcars
+```{r}
+fviz_pca_ind(
+  prcomp(mtcars),
+  title = "PCA - mtcars",
+  palette = "jco",
+  geom = "point",
+  ggtheme = theme_classic(),
+  legend = "bottom"
+)
+```
+
+## 2. Finding Optimal value of k
+
+### Dataset: wdbc
+#### Elbow Method: k-means
+```{r}
+wdbc_elbow_kmeans <- fviz_nbclust(wdbc, kmeans, method = "wss") + geom_vline(xintercept = 2, linetype = 2)
+wdbc_elbow_kmeans
+```
+
+#### Silhouette Width: k-means and pam
+```{r}
+wdbc_silhouette_kmeans <- fviz_nbclust(wdbc, kmeans, method = "silhouette")
+wdbc_silhouette_pam <- fviz_nbclust(wdbc, pam, method = "silhouette")
+
+wdbc_silhouette_kmeans +
+  wdbc_silhouette_pam +
+  plot_layout(ncol = 2) # TODO: adjust size
+```
+
+
+#### Gap Statistic: k-means and pam
+```{r}
+wdbc_gap_kmeans <- fviz_nbclust(wdbc, kmeans, nstart = 50, method = "gap_stat", nboot = 500)
+wdbc_gap_pam <- fviz_nbclust(wdbc, pam, nstart = 50, method = "gap_stat", nboot = 800)
+
+wdbc_gap_kmeans +
+  wdbc_gap_pam +
+  plot_layout(ncol = 2)
+```
+
+TODO: the positive negative bar plot
+
+### Dataset: mtcars
+```{r}
+wdbc_gap_hierarchical <- fviz_nbclust(mtcars, hcut, nstart = 50, method = "gap_stat", nboot = 500)
+wdbc_gap_hierarchical
+```
+
+## 3. K-Means using wdbc
+```{r}
+set.seed(101)
+
+color_palette <- c("red", "blue", "green", "pink", "purple", "lightblue")
+
+km.res <- kmeans(wdbc, 2, nstart = 100)
+
+fviz_cluster(
+  km.res,
+  data = wdbc,
+  palette = color_palette,
+  ellipse.type = "convex",
+  star.plot = TRUE,
+  ellipse = TRUE,
+  geom = "point",
+  ggtheme = theme_minimal()
+)
+```
+
+
+## 4. PAM using wdbc
+```{r}
+set.seed(101)
+
+pam.res <- pam(wdbc, 2)
+
+fviz_cluster(
+  pam.res,
+  data = wdbc,
+  palette = color_palette,
+  ellipse.type = "convex",
+  star.plot = TRUE,
+  ellipse = TRUE,
+  geom = "point",
+  ggtheme = theme_minimal()
+)
+```
+
+## 3. Internal Validation
+```{r}
+intern_wdbc <- clValid(wdbc, 2:6, clMethods = c("kmeans", "hierarchical", "pam"), validation = "internal")
+
+summary(intern_wdbc)
+```
+
+```{r}
+op <- par(no.readonly = TRUE)
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+
+plot(intern_wdbc, legend = FALSE)
+
+plot(nClusters(intern_wdbc), measures(intern_wdbc, "Dunn")[, , 1], type = "n", axes = FALSE, xlab = "", ylab = "")
+legend("center", clusterMethods(intern_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
+
+par(op)
+```
+
+## 3.2. Stability Validation
+```{r}
+# Perform stability validation
+stab_wdbc <- clValid(wdbc, 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "stability")
+
+# Display the optimal scores using the optimalScores method
+optimal_scores_stab <- optimalScores(stab_wdbc)
+optimal_scores_stab
+```
+
+
+```{r}
+# Set graphical parameters to combine plots
+op <- par(no.readonly = TRUE)
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+
+# Plot the stability validation results without legends
+plot(stab_wdbc, measure = c("APN", "AD", "ADM", "FOM"), legend = FALSE)
+
+# Custom plot for the legend
+plot(nClusters(stab_wdbc), measures(stab_wdbc, "APN")[, , 1], type = "n", axes = FALSE, xlab = "", ylab = "")
+legend("center", clusterMethods(stab_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
+
+# Reset graphical parameters
+par(op)
+```
+
+## 5. Hierarchical Clustering using mtcars
+
+### 5.1. Applying Various Linkage Methods
+#### 5.1.1. Single Linkage Method
+```{r}
+res.dist <- dist(mtcars, method = "manhattan")
+hc_single <- hclust(d = res.dist, method = "single")
+
+fviz_dend(
+  hc_single,
+  cex = 0.5, # Increase the label size
+  k = 2, # Number of clusters
+  k_colors = "jco", # Color palette for clusters
+  rect = TRUE,
+  rect_border = "jco", # Add rectangle around clusters
+  rect_fill = TRUE, # Fill the rectangle
+  label_cols = "black", # Color of labels
+  label_cex = 0.5, # Font size of labels
+  main = "Single Linkage Dendrogram"
+) + theme_minimal()
+```
+
+#### 5.1.2. Correlation between cophenetic distance and the original distance
+```{r}
+cor(res.dist, cophenetic(hc_single))
+```
+
+#### 5.2.1. Complete Linkage Method
+```{r}
+hc_complete <- hclust(d = res.dist, method = "complete")
+
+fviz_dend(
+  hc_complete,
+  cex = 0.5,
+  k = 2,
+  k_colors = "jco",
+  rect = TRUE,
+  rect_border = "jco",
+  rect_fill = TRUE,
+  label_cols = "black",
+  label_cex = 0.5,
+  main = "Complete Linkage Dendrogram"
+) + theme_minimal()
+```
+
+#### 5.2.2. Correlation between cophenetic distance and the original distance
+```{r}
+cor(res.dist, cophenetic(hc_complete))
+```
+
+#### 5.3.1. Average Linkage Method
+```{r}
+hc_average <- hclust(d = res.dist, method = "average")
+
+fviz_dend(
+  hc_average,
+  cex = 0.5,
+  k = 2,
+  k_colors = "jco",
+  rect = TRUE,
+  rect_border = "jco",
+  rect_fill = TRUE,
+  label_cols = "black",
+  label_cex = 0.5,
+  main = "Average Linkage Dendrogram"
+) + theme_minimal()
+```
+
+
+```{r}
+cor(res.dist, cophenetic(hc_average))
+```
+
+
+#### 2.4. Ward D Linkage Method
+```{r}
+hc_ward_d <- hclust(d = res.dist, method = "ward.D")
+
+fviz_dend(
+  hc_ward_d,
+  cex = 0.5,
+  k = 2,
+  k_colors = "jco",
+  rect = TRUE,
+  rect_border = "jco",
+  rect_fill = TRUE,
+  label_cols = "black",
+  label_cex = 0.5,
+  main = "Ward D Linkage Dendrogram"
+) + theme_minimal()
+```
+
+# Correlation between cophenetic distance and the original distance
+```{r}
+cor(res.dist, cophenetic(hc_ward_d))
+```
+
+
+#### 2.5. Ward D2 Method
+```{r}
+hc_ward_d2 <- hclust(d = res.dist, method = "ward.D2")
+
+fviz_dend(
+  hc_ward_d2,
+  cex = 0.5,
+  k = 2,
+  k_colors = "jco",
+  rect = TRUE,
+  rect_border = "jco",
+  rect_fill = TRUE,
+  label_cols = "black",
+  label_cex = 0.5,
+  main = "Ward D2 Linkage Dendrogram"
+) + theme_minimal()
+```
+
+# Correlation between cophenetic distance and the original distance
+```{r}
+cor(res.dist, cophenetic(hc_ward_d2))
+```
+
+## 3. Comparison between Dendrogram
+```{r}
+dend_complete <- mtcars %>%
+  dist %>%
+  hclust("complete") %>%
+  as.dendrogram
+dend_single <- mtcars %>%
+  dist %>%
+  hclust("single") %>%
+  as.dendrogram
+dend_average <- mtcars %>%
+  dist %>%
+  hclust("average") %>%
+  as.dendrogram
+dend_centroid <- mtcars %>%
+  dist %>%
+  hclust("centroid") %>%
+  as.dendrogram
+dend_ward <- mtcars %>%
+  dist %>%
+  hclust("ward.D") %>%
+  as.dendrogram
+dend_ward2 <- mtcars %>%
+  dist %>%
+  hclust("ward.D2") %>%
+  as.dendrogram
+```
+
+
+```{r}
+dend_list <- dendlist(
+  "Complete" = dend_complete,
+  "Single" = dend_single,
+  "Average" = dend_average,
+  "Centroid" = dend_centroid,
+  "WardD" = dend_ward,
+  "WardD2" = dend_ward2
+)
+
+cors <- cor.dendlist(dend_list)
+
+round(cors, 2)
+```
+
+## Correlation matrix
+```{r}
+# Visualize the correlation matrix using corrplot package
+corrplot(cors, "pie", "lower")
+```
+
+
+```{r}
+# Agglomerative Nesting (Hierarchical Clustering)
+res.agnes <- agnes(
+  x = mtcars, # data matrix
+  stand = TRUE, # Standardize the data
+  metric = "manhattan", # metric for distance matrix
+  method = "ward" # Linkage method
+)
+
+fviz_dend(
+  res.agnes,
+  cex = 0.5,
+  k = 2,
+  k_colors = "jco",
+  rect = TRUE,
+  rect_border = "jco",
+  rect_fill = TRUE,
+  label_cols = "black",
+  label_cex = 0.5,
+  main = "Hierarchical Nested Clustering Dendrogram"
+) + theme_minimal()
+```
+
+
+```{r}
+# Divisive Analysis Clustering
+res.diana <- diana(
+  x = mtcars, # data matrix
+  stand = TRUE, # standardize the data
+  metric = "manhattan" # metric for distance matrix
+)
+
+fviz_dend(
+  res.diana,
+  cex = 0.5,
+  k = 2,
+  k_colors = "jco",
+  rect = TRUE,
+  rect_border = "jco",
+  rect_fill = TRUE,
+  label_cols = "black",
+  label_cex = 0.5,
+  main = "Divisive Clustering Dendrogram"
+) + theme_minimal()
+```
+
+## 6. Internal Validation
+```{r}
+# Perform internal validation
+intern_mtcars <- clValid(mtcars, 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "internal")
+
+# Display the summary of the internal validation results
+summary(intern_mtcars)
+```
+
+```{r}
+# Set graphical parameters to combine plots
+op <- par(no.readonly = TRUE)
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+
+# Plot the validation results without legends
+plot(intern_mtcars, legend = FALSE)
+
+# Custom plot for the legend
+plot(nClusters(intern_mtcars), measures(intern_mtcars, "Dunn")[, , 1], type = "n", axes = FALSE, xlab = "", ylab = "")
+legend("center", clusterMethods(intern_mtcars), col = 1:9, lty = 1:9, pch = paste(1:9))
+
+# Reset graphical parameters
+par(op)
+```
+
+
+## 3.2. Stability Validation
+
+```{r}
+# Perform stability validation
+stab_mtcars <- clValid(mtcars, 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "stability")
+
+# Display the optimal scores using the optimalScores method
+optimal_scores_stab_mtcars <- optimalScores(stab_mtcars)
+optimal_scores_stab_mtcars
+```
+
+```{r}
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+
+plot(stab_mtcars, measure = c("APN", "AD", "ADM", "FOM"), legend = F)
+
+plot(nClusters(stab_mtcars), measures(stab_mtcars, "APN")[, , 1], type = "n", axes = F, xlab = "", ylab = "")
+legend("center", clusterMethods(stab_mtcars), col = 1:9, lty = 1:9, pch = paste(1:9))
+
+par(op)
+```
+
+
+
+
