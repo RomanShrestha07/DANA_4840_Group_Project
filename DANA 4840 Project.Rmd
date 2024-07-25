@@ -189,7 +189,7 @@ wdbc_silhouette_pam <- fviz_nbclust(wdbc, pam, method = "silhouette")
 
 wdbc_silhouette_kmeans +
   wdbc_silhouette_pam +
-  plot_layout(ncol = 2) # TODO: adjust size
+  plot_layout(ncol = 2)
 ```
 
 
