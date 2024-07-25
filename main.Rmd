@@ -69,6 +69,12 @@ ggplot(pca_data, aes(x = PC1, y = PC2, color = Cluster)) +
 ## Elbow method
 
 ```{r}
+fviz_nbclust(data, pam, method = "wss") + geom_vline(xintercept = 2, linetype = 2)
+```
+
+
+
+```{r}
 # Estimating the optimal number of clusters
 fviz_nbclust(data, kmeans, method = "wss") + geom_vline(xintercept = 2, linetype = 2)
 # if n = k we will get 0
