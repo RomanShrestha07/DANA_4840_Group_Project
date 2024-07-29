@@ -5,8 +5,8 @@ output: html_document
 ---
 
 ## Loading the libraries
-```{r}
-library("tidyverse")
+```{r loading_libraries, message = FALSE}
+library("ggplot2")
 library("factoextra")
 library("dendextend")
 library("hopkins")
@@ -14,37 +14,24 @@ library("corrplot")
 library("cluster")
 library("patchwork")
 library("clValid")
-
-set.seed(101)
 ```
 
-
-## Loading the Datasets
-### K-means Clustering: wdbc
-```{r}
-wdbc <- read.table("data/wdbc.data", header = T, sep = ",")
+## 1. Loading the Datasets
+### 1.1. K-means Clustering: wdbc
+```{r read_wdbc}
+wdbc <- read.csv("data/wdbc_kaggle.csv", header = T, sep = ",")
 head(wdbc)
 ```
 
-#### Correctly labeling the columns
+#### 1.1.2. Checking the internal structure: wdbc
 ```{r}
-correct_column_names <- c(
-  "ID", "Diagnosis", "radius1", "texture1",
-  "perimeter1", "area1", "smoothness1", "compactness1",
-  "concavity1", "concave_points1", "symmetry1", "fractal_dimension1",
-  "radius2", "texture2", "perimeter2", "area2",
-  "smoothness2", "compactness2", "concavity2", "concave_points2",
-  "symmetry2", "fractal_dimension2", "radius3", "texture3",
-  "perimeter3", "area3", "smoothness3", "compactness3",
-  "concavity3", "concave_points3", "symmetry3", "fractal_dimension3"
-)
-
-colnames(wdbc) <- correct_column_names
-head(wdbc)
+dim(wdbc)
+str(wdbc)
 ```
 
-#### Pre-processing and Normalizing: wdbc
+#### 1.1.3. Pre-processing and Normalizing: wdbc
 ```{r}
+diagnosis <- wdbc$diagnosis
 wdbc_numerical <- wdbc[, -c(1, 2)]
 
 wdbc_scaled <- data.frame(scale(wdbc_numerical))
@@ -53,29 +40,39 @@ wdbc <- wdbc_scaled
 head(wdbc)
 ```
 
-#### Checking the internal structure: wdbc
+#### 1.1.4. EDA: wdbc
 ```{r}
-str(wdbc)
+missing_wdbc <- sapply(wdbc, function(x) sum(is.na(x)))
+missing_wdbc
 ```
 
-### Hierarchical Clustering: mtcars
+```{r}
+mean_columns <- grep("_mean", names(wdbc), value = TRUE)
+se_columns <- grep("_se", names(wdbc), value = TRUE)
+worst_columns <- grep("_worst", names(wdbc), value = TRUE)
+
+boxplot(wdbc[, mean_columns], horizontal = T)
+boxplot(wdbc[, se_columns], horizontal = T)
+boxplot(wdbc[, worst_columns], horizontal = T)
+```
+
+```{r}
+diagnosis_freq <- table(diagnosis)
+diagnosis_freq
+
+diagnosis_rel_freq <- prop.table(diagnosis_freq) * 100
+
+pie(diagnosis_rel_freq, main = "% Distribution of Benign/Malignant Cancer", col = c("limegreen", "red2"))
+```
+
+### 1.2. Hierarchical Clustering: mtcars
 ```{r}
 mtcars <- read.csv("data/mtcars.csv", header = T, sep = ",")
 head(mtcars)
 ```
 
-#### Pre-processing and Normalizing: mtcars
+#### 1.2.1. Pre-processing and Normalizing: mtcars
 ```{r}
-"
-mtcars_categorical <- data.frame(
-  cyl = factor(mtcars$cyl, ordered = T, levels = c(4, 6, 8)),
-  vs = mtcars$vs,
-  am = mtcars$am,
-  gear = factor(mtcars$gear, ordered = T, levels = c(3, 4, 5)),
-  carb = factor(mtcars$carb, ordered = T, levels = c(1, 2, 3, 4, 6, 8))
-)
-"
-
 mtcars_categorical <- data.frame(
   cyl = mtcars$cyl,
   vs = mtcars$vs,
@@ -101,39 +98,65 @@ mtcars <- mtcars_joined
 head(mtcars)
 ```
 
-#### Checking the internal structure: mtcars
+#### 1.2.2. Checking the internal structure: mtcars
 ```{r}
 str(mtcars)
 ```
 
-#### Checking the column index
+#### 1.2.3. Checking the row index
 ```{r}
 rownames(mtcars)
 ```
 
-
-## 1. Assessing Clustering Tendency
-### 1.1. Statistical Method
-
-#### Hopkins Statistic: wdbc
+#### 1.2.4. EDA: mtcars
 ```{r}
-set.seed(25)
+boxplot(scale(mtcars_numerical), horizontal = T)
+```
+
+```{r}
+ggplot(mtcars_categorical, aes(x = factor(cyl), fill = factor(cyl))) +
+  geom_bar() +
+  theme_minimal()
+ggplot(mtcars_categorical, aes(x = factor(vs), fill = factor(vs))) +
+  geom_bar() +
+  theme_minimal()
+ggplot(mtcars_categorical, aes(x = factor(am), fill = factor(am))) +
+  geom_bar() +
+  theme_minimal()
+ggplot(mtcars_categorical, aes(x = factor(gear), fill = factor(gear))) +
+  geom_bar() +
+  theme_minimal()
+ggplot(mtcars_categorical, aes(x = factor(carb), fill = factor(carb))) +
+  geom_bar() +
+  theme_minimal()
+```
+
+```{r}
+missing_mtcars <- sapply(mtcars, function(x) sum(is.na(x)))
+missing_mtcars
+```
+
+## 2. Assessing Clustering Tendency
+### 2.1. Statistical Method
+
+#### 2.1.1. Hopkins Statistic: wdbc
+```{r}
+set.seed(69)
 
 hopkins_wdbc <- hopkins(wdbc, m = ceiling(nrow(wdbc) / 10))
 hopkins_wdbc
 ```
 
-#### Hopkins Statistic: mtcars
+#### 2.1.2. Hopkins Statistic: mtcars
 ```{r}
-set.seed(25)
+set.seed(69)
 
 hopkins_mtcars <- hopkins(mtcars, m = ceiling(nrow(mtcars) / 10))
 hopkins_mtcars
 ```
 
-### 1.2. Visual Method
-
-#### VAT: wdbc
+### 2.2. Visual Method
+#### 2.2.1. VAT: wdbc
 ```{r}
 fviz_dist(
   dist(wdbc),
@@ -141,7 +164,7 @@ fviz_dist(
 ) + labs(title = "wdbc")
 ```
 
-#### VAT: mtcars
+#### 2.2.2. VAT: mtcars
 ```{r}
 fviz_dist(
   dist(mtcars),
@@ -149,11 +172,12 @@ fviz_dist(
 ) + labs(title = "mtcar")
 ```
 
-#### PCA: wdbc
+#### 2.2.3. PCA: wdbc
 ```{r}
 fviz_pca_ind(
   prcomp(wdbc),
   title = "PCA - wdbc",
+  habillage = diagnosis,
   palette = "jco",
   geom = "point",
   ggtheme = theme_classic(),
@@ -161,7 +185,7 @@ fviz_pca_ind(
 )
 ```
 
-#### PCA: mtcars
+#### 2.2.4. PCA: mtcars
 ```{r}
 fviz_pca_ind(
   prcomp(mtcars),
@@ -173,16 +197,16 @@ fviz_pca_ind(
 )
 ```
 
-## 2. Finding Optimal value of k
+## 3. Finding Optimal value of k
 
-### Dataset: wdbc
-#### Elbow Method: k-means
+### 3.1. Dataset: wdbc
+#### 3.1.1. Elbow Method: k-means
 ```{r}
 wdbc_elbow_kmeans <- fviz_nbclust(wdbc, kmeans, method = "wss") + geom_vline(xintercept = 2, linetype = 2)
 wdbc_elbow_kmeans
 ```
 
-#### Silhouette Width: k-means and pam
+#### 3.1.2. Silhouette Width: k-means and pam
 ```{r}
 wdbc_silhouette_kmeans <- fviz_nbclust(wdbc, kmeans, method = "silhouette")
 wdbc_silhouette_pam <- fviz_nbclust(wdbc, pam, method = "silhouette")
@@ -193,25 +217,29 @@ wdbc_silhouette_kmeans +
 ```
 
 
-#### Gap Statistic: k-means and pam
+#### 3.1.3. Gap Statistic: k-means and pam
 ```{r}
-wdbc_gap_kmeans <- fviz_nbclust(wdbc, kmeans, nstart = 50, method = "gap_stat", nboot = 500)
-wdbc_gap_pam <- fviz_nbclust(wdbc, pam, nstart = 50, method = "gap_stat", nboot = 800)
-
-wdbc_gap_kmeans +
-  wdbc_gap_pam +
-  plot_layout(ncol = 2)
+# wdbc_gap_kmeans <- fviz_nbclust(wdbc, kmeans, nstart = 50, method = "gap_stat", nboot = 500)
+# wdbc_gap_pam <- fviz_nbclust(wdbc, pam, nstart = 50, method = "gap_stat", nboot = 800)
+#
+# wdbc_gap_kmeans +
+#   wdbc_gap_pam +
+#   plot_layout(ncol = 2)
 ```
 
-TODO: the positive negative bar plot
+#### 3.1.4. TODO: the positive negative bar plot
 
-### Dataset: mtcars
-```{r}
+### 3.2. Dataset: mtcars
+#### 3.2.1. Gap Statistic: k-means and pam
+```{r, message = FALSE}
 wdbc_gap_hierarchical <- fviz_nbclust(mtcars, hcut, nstart = 50, method = "gap_stat", nboot = 500)
 wdbc_gap_hierarchical
 ```
 
-## 3. K-Means using wdbc
+#### 3.2.2. TODO: the positive negative bar plot
+
+## 4. K-Means and PAM Clustering
+### 4.1. K-means on wdbc
 ```{r}
 set.seed(101)
 
@@ -230,10 +258,10 @@ kmeans_graph <- fviz_cluster(
   main = "K-Means Cluster Plot",
   ggtheme = theme_minimal()
 )
+kmeans_graph
 ```
 
-
-## 4. PAM using wdbc
+### 4.2. PAM on wdbc
 ```{r}
 set.seed(101)
 
@@ -250,15 +278,16 @@ pam_graph <- fviz_cluster(
   main = "PAM Cluster Plot",
   ggtheme = theme_minimal()
 )
+pam_graph
 ```
 
-
+### 4.3. Comparing the results of K-means and PAM
 ```{r}
 kmeans_graph + pam_graph + plot_layout(ncol = 1)
 ```
 
 
-## 3. Internal Validation
+### 4.4. Internal Validation of K-means and PAM
 ```{r}
 intern_wdbc <- clValid(wdbc, 2:6, clMethods = c("kmeans", "hierarchical", "pam"), validation = "internal")
 
@@ -277,14 +306,13 @@ legend("center", clusterMethods(intern_wdbc), col = 1:9, lty = 1:9, pch = paste(
 par(op)
 ```
 
-## 3.2. Stability Validation
+### 4.5. Stability Validation of K-means and PAM
 ```{r}
 stab_wdbc <- clValid(wdbc, nClust = 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "stability")
 
 optimal_scores_stab <- optimalScores(stab_wdbc)
 optimal_scores_stab
 ```
-
 
 ```{r}
 par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
@@ -295,13 +323,24 @@ plot(nClusters(stab_wdbc), measures(stab_wdbc, "APN")[, , 1], type = "n", axes =
 legend("left", clusterMethods(stab_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
 ```
 
-## 5. Hierarchical Clustering using mtcars
-
+## 5. Hierarchical Clustering
 ### 5.1. Applying Various Linkage Methods
 #### 5.1.1. Single Linkage Method
 ```{r}
 res.dist <- dist(mtcars, method = "manhattan")
+
 hc_single <- hclust(d = res.dist, method = "single")
+grp_single <- cutree(hc_single, k = 2)
+
+single_cluster <- fviz_cluster(
+  list(data = mtcars, cluster = grp_single),
+  palette = "jco",
+  geom = "point",
+  ellipse.type = "convex",
+  show.clust.cent = FALSE,
+  main = "Single Linkage Cluster",
+  ggtheme = theme_minimal()
+)
 
 single_dendrogram <- fviz_dend(
   hc_single,
@@ -313,18 +352,26 @@ single_dendrogram <- fviz_dend(
   rect_fill = TRUE, # Fill the rectangle
   label_cols = "black", # Color of labels
   label_cex = 0.5, # Font size of labels
-  main = "Single Linkage Dendrogram"
-) + theme_minimal()
+  main = "Single Linkage Dendrogram",
+  ggtheme = theme_minimal()
+)
+single_dendrogram
 ```
 
-#### 5.1.2. Correlation between cophenetic distance and the original distance
-```{r}
-cor(res.dist, cophenetic(hc_single))
-```
-
-#### 5.2.1. Complete Linkage Method
+#### 5.1.2. Complete Linkage Method
 ```{r}
 hc_complete <- hclust(d = res.dist, method = "complete")
+grp_complete <- cutree(hc_complete, k = 2)
+
+complete_cluster <- fviz_cluster(
+  list(data = mtcars, cluster = grp_complete),
+  palette = "jco",
+  geom = "point",
+  ellipse.type = "convex",
+  show.clust.cent = FALSE,
+  main = "Complete Linkage Cluster",
+  ggtheme = theme_minimal()
+)
 
 complete_dendrogram <- fviz_dend(
   hc_complete,
@@ -336,18 +383,26 @@ complete_dendrogram <- fviz_dend(
   rect_fill = TRUE,
   label_cols = "black",
   label_cex = 0.5,
-  main = "Complete Linkage Dendrogram"
-) + theme_minimal()
+  main = "Complete Linkage Dendrogram",
+  ggtheme = theme_minimal()
+)
+complete_dendrogram
 ```
 
-#### 5.2.2. Correlation between cophenetic distance and the original distance
-```{r}
-cor(res.dist, cophenetic(hc_complete))
-```
-
-#### 5.3.1. Average Linkage Method
+#### 5.1.3. Average Linkage Method
 ```{r}
 hc_average <- hclust(d = res.dist, method = "average")
+grp_average <- cutree(hc_average, k = 2)
+
+average_cluster <- fviz_cluster(
+  list(data = mtcars, cluster = grp_average),
+  palette = "jco",
+  geom = "point",
+  ellipse.type = "convex",
+  show.clust.cent = FALSE,
+  main = "Average Linkage Cluster",
+  ggtheme = theme_minimal()
+)
 
 average_dendrogram <- fviz_dend(
   hc_average,
@@ -359,19 +414,26 @@ average_dendrogram <- fviz_dend(
   rect_fill = TRUE,
   label_cols = "black",
   label_cex = 0.5,
-  main = "Average Linkage Dendrogram"
-) + theme_minimal()
+  main = "Average Linkage Dendrogram",
+  ggtheme = theme_minimal()
+)
+average_dendrogram
 ```
 
-
-```{r}
-cor(res.dist, cophenetic(hc_average))
-```
-
-
-#### 2.4. Ward D Linkage Method
+#### 5.1.4. Ward D Linkage Method
 ```{r}
 hc_ward_d <- hclust(d = res.dist, method = "ward.D")
+grp_ward_d <- cutree(hc_ward_d, k = 2)
+
+ward_d_cluster <- fviz_cluster(
+  list(data = mtcars, cluster = grp_ward_d),
+  palette = "jco",
+  geom = "point",
+  ellipse.type = "convex",
+  show.clust.cent = FALSE,
+  main = "Ward D Linkage Cluster",
+  ggtheme = theme_minimal()
+)
 
 ward_d_dendrogram <- fviz_dend(
   hc_ward_d,
@@ -383,19 +445,26 @@ ward_d_dendrogram <- fviz_dend(
   rect_fill = TRUE,
   label_cols = "black",
   label_cex = 0.5,
-  main = "Ward D Linkage Dendrogram"
-) + theme_minimal()
+  main = "Ward D Linkage Dendrogram",
+  ggtheme = theme_minimal()
+)
+ward_d_dendrogram
 ```
 
-# Correlation between cophenetic distance and the original distance
-```{r}
-cor(res.dist, cophenetic(hc_ward_d))
-```
-
-
-#### 2.5. Ward D2 Method
+#### 5.1.5. Ward D2 Linkage Method
 ```{r}
 hc_ward_d2 <- hclust(d = res.dist, method = "ward.D2")
+grp_ward_d2 <- cutree(hc_ward_d2, k = 2)
+
+ward_d2_cluster <- fviz_cluster(
+  list(data = mtcars, cluster = grp_ward_d2),
+  palette = "jco",
+  geom = "point",
+  ellipse.type = "convex",
+  show.clust.cent = FALSE,
+  main = "Ward D2 Linkage Cluster",
+  ggtheme = theme_minimal()
+)
 
 ward_d2_dendrogram <- fviz_dend(
   hc_ward_d2,
@@ -407,11 +476,14 @@ ward_d2_dendrogram <- fviz_dend(
   rect_fill = TRUE,
   label_cols = "black",
   label_cex = 0.5,
-  main = "Ward D2 Linkage Dendrogram"
-) + theme_minimal()
+  main = "Ward D2 Linkage Dendrogram",
+  ggtheme = theme_minimal()
+)
+ward_d2_dendrogram
 ```
 
-
+### 5.2. Comparing Linkage Methods
+#### 5.2.1. Comparing the dendrograms
 ```{r}
 single_dendrogram +
   complete_dendrogram +
@@ -421,14 +493,26 @@ single_dendrogram +
   plot_layout(ncol = 2)
 ```
 
-
-
-# Correlation between cophenetic distance and the original distance
+#### 5.2.2. Comparing the clusters
 ```{r}
+single_cluster +
+  complete_cluster +
+  average_cluster +
+  ward_d_cluster +
+  ward_d2_cluster +
+  plot_layout(ncol = 2)
+```
+
+#### 5.2.3. Correlation between cophenetic distance and the original distance
+```{r}
+cor(res.dist, cophenetic(hc_single))
+cor(res.dist, cophenetic(hc_complete))
+cor(res.dist, cophenetic(hc_average))
+cor(res.dist, cophenetic(hc_ward_d))
 cor(res.dist, cophenetic(hc_ward_d2))
 ```
 
-## 3. Comparison between Dendrogram
+#### 5.2.4. Correlation Matrix
 ```{r}
 dend_complete <- mtcars %>%
   dist %>%
@@ -454,10 +538,7 @@ dend_ward2 <- mtcars %>%
   dist %>%
   hclust("ward.D2") %>%
   as.dendrogram
-```
 
-
-```{r}
 dend_list <- dendlist(
   "Complete" = dend_complete,
   "Single" = dend_single,
@@ -472,12 +553,13 @@ cors <- cor.dendlist(dend_list)
 round(cors, 2)
 ```
 
-## Visualizing the Correlation matrix
+#### 5.2.5. Visualizing the Correlation Matrix
 ```{r}
 corrplot(cors, "pie", "lower")
 ```
 
-# Agglomerative Nesting (Hierarchical Clustering) Analysis
+### 5.3. Alternative Hierarchical Clustering Methods
+#### 5.3.1. Agglomerative Nesting
 ```{r}
 res.agnes <- agnes(
   x = mtcars, # data matrix
@@ -498,14 +580,15 @@ nesting_dendrogram <- fviz_dend(
   label_cex = 0.5,
   main = "Hierarchical Nested Clustering Dendrogram"
 ) + theme_minimal()
+nesting_dendrogram
 ```
 
-# Divisive Analysis Clustering
+#### 5.3.2. Divisive Analysis Clustering
 ```{r}
 res.diana <- diana(
-  x = mtcars, # data matrix
-  stand = TRUE, # standardize the data
-  metric = "manhattan" # metric for distance matrix
+  x = mtcars,
+  stand = TRUE,
+  metric = "manhattan"
 )
 
 divisive_dendrogram <- fviz_dend(
@@ -520,17 +603,17 @@ divisive_dendrogram <- fviz_dend(
   label_cex = 0.5,
   main = "Divisive Clustering Dendrogram"
 ) + theme_minimal()
+divisive_dendrogram
 ```
 
-
+#### 5.3.3.Comparing Alternative Hierarchical Clustering Methods
 ```{r}
 nesting_dendrogram +
   divisive_dendrogram +
   plot_layout(ncol = 2)
 ```
 
-
-## 6. Internal Validation
+## 5.4. Internal Validation of Hierarchical Clustering
 ```{r}
 intern_mtcars <- clValid(mtcars, 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "internal")
 
@@ -546,14 +629,10 @@ plot(nClusters(intern_mtcars), measures(intern_mtcars, "Dunn")[, , 1], type = "n
 legend("center", clusterMethods(intern_mtcars), col = 1:9, lty = 1:9, pch = paste(1:9))
 ```
 
-
-## 3.2. Stability Validation
-
+## 5.4. Stability Validation of Hierarchical Clustering
 ```{r}
-# Perform stability validation
 stab_mtcars <- clValid(mtcars, 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "stability")
 
-# Display the optimal scores using the optimalScores method
 optimal_scores_stab_mtcars <- optimalScores(stab_mtcars)
 optimal_scores_stab_mtcars
 ```
