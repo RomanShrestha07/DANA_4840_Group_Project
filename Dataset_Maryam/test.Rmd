@@ -35,6 +35,10 @@ hopkins_val <- hopkins(cars, m = ceiling(nrow(cars) / 10))
 hopkins_val
 ```
 
+```{r}
+wdbc_gap_hierarchical <- fviz_nbclust(cars, hcut, nstart = 50, method = "gap_stat", nboot = 500)
+wdbc_gap_hierarchical
+```
 
 
 
