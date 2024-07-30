@@ -4,23 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="648550f5-50e6-4136-94de-c940c6745bcf" name="Changes" comment="- major code changes&#10;- topics properly structured&#10;- wdbc dataset source change">
-      <change afterPath="$PROJECT_DIR$/DANA4840_Hierarchical_Clustering_Cars.Rmd" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/DANA4840_Partitional_Clustering_Cancer.Rmd" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/old_code/DANA 4840 Project.Rmd" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/old_code/DANA4840_Hierarchical-Clustering_Cars-Dataset.Rmd" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/old_code/DANA4840_Partitional-Clustering_Breast-Cancer-Dataset.Rmd" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/old_code/DANA4840_Partitional-Clustering_Breast-Cancer-Dataset_Updated.Rmd" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/old_code/DANA4840_Partitional-Clustering_Breast-Cancer-Dataset_UpdatedAgain.pdf" afterDir="false" />
+    <list default="true" id="648550f5-50e6-4136-94de-c940c6745bcf" name="Changes" comment="- changed project file structure 2">
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DANA 4840 Project.Rmd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DANA4840_Hierarchical-Clustering_Cars-Dataset.Rmd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DANA4840_Hierarchical-Clustering_Cars-Dataset_updated.Rmd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DANA4840_Partitional-Clustering_Breast-Cancer-Dataset.Rmd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DANA4840_Partitional-Clustering_Breast-Cancer-Dataset_Updated.Rmd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DANA4840_Partitional-Clustering_Breast-Cancer-Dataset_UpdatedAgain.Rmd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DANA4840_Partitional-Clustering_Breast-Cancer-Dataset_UpdatedAgain.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/DANA4840_Hierarchical_Clustering_Cars.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/DANA4840_Hierarchical_Clustering_Cars.Rmd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DANA4840_Partitional_Clustering_Cancer.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/DANA4840_Partitional_Clustering_Cancer.Rmd" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -58,7 +46,7 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/Users/Roman Shrestha/Documents/R/Semester_3/4840 - Classification II/DANA_4840_Project/DANA_4840_Group_Project/data&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
 }</component>
   <component name="RecentsManager">
@@ -96,6 +84,8 @@
     <MESSAGE value="- fixed up some of the graphs" />
     <MESSAGE value="- minor change" />
     <MESSAGE value="- major code changes&#10;- topics properly structured&#10;- wdbc dataset source change" />
-    <option name="LAST_COMMIT_MESSAGE" value="- major code changes&#10;- topics properly structured&#10;- wdbc dataset source change" />
+    <MESSAGE value="- changed project file structure" />
+    <MESSAGE value="- changed project file structure 2" />
+    <option name="LAST_COMMIT_MESSAGE" value="- changed project file structure 2" />
   </component>
 </project>
