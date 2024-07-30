@@ -1,0 +1,146 @@
+---
+title: "DANA4840 Project - Partitional Clustering"
+author: "M.Gadimova, A.Mukherjee, R.Shrestha, P.Tating"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# 1. Research Statement on Breast Cancer Dataset
+
+Breast cancer is a critical health issue, with early and accurate detection playing a vital role in treatment and patient outcomes. This dataset captures the features of cell nuclei through comprehensive measurements taken during breast cancer biopsies. Each observation spans several measurement times and includes characteristics like radius, texture, perimeter, area, and others. Additionally, labels describing the tumor's malignancy or benignity are included in the dataset.
+
+K-Means and Partitioning Around Medoids (PAM) clustering methods will be used to examine and comprehend the underlying patterns in this data. These techniques aim to segment the dataset into clusters, revealing potential subtypes and characteristics of the disease. This clustering analysis not only provides insights into the heterogeneity of breast cancer but also aids in identifying key features that distinguish between benign and malignant cases. The findings can contribute to improving diagnostic accuracy and personalized treatment approaches.
+
+# 2. Preliminaries
+
+Before diving into the cluster analysis, let's first thoroughly examine and understand our data. This preliminary step will allow us to identify key patterns and characteristics within the dataset, ensuring a solid foundation for accurate analysis. By doing so, we can address any potential data quality issues and refine our approach for more meaningful results.
+
+## 2.1 Loading the Libraries
+
+```{r}
+library("tidyverse")
+library("factoextra")
+library("dendextend")
+library("hopkins")
+library("corrplot")
+library("cluster")
+library("patchwork")
+library("clValid")
+
+set.seed(101)
+```
+
+## 2.2 Reading the Data
+
+```{r}
+wdbc <- read.table("data/wdbc.data", header = T, sep = ",")
+head(wdbc)
+```
+
+```{r}
+correct_column_names <- c(
+  "ID", "Diagnosis", "radius1", "texture1",
+  "perimeter1", "area1", "smoothness1", "compactness1",
+  "concavity1", "concave_points1", "symmetry1", "fractal_dimension1",
+  "radius2", "texture2", "perimeter2", "area2",
+  "smoothness2", "compactness2", "concavity2", "concave_points2",
+  "symmetry2", "fractal_dimension2", "radius3", "texture3",
+  "perimeter3", "area3", "smoothness3", "compactness3",
+  "concavity3", "concave_points3", "symmetry3", "fractal_dimension3"
+)
+
+colnames(wdbc) <- correct_column_names
+head(wdbc)
+```
+
+## 2.3 Feature Explanation
+
+## 2.4 Exploratory Data Analysis
+
+
+
+## 2.5 Data Pre-processing
+
+```{r}
+wdbc_numerical <- wdbc[, -c(1, 2)]
+
+wdbc_scaled <- data.frame(scale(wdbc_numerical))
+rownames(wdbc_scaled) <- wdbc$ID
+wdbc <- wdbc_scaled
+head(wdbc)
+```
+
+# 3. Pre-clustering Assessment
+
+Before performing clustering analysis, it is crucial to conduct a pre-clustering assessment to evaluate the dataset's cluster tendency and determine the optimal clustering approach. Tools like the Hopkins statistic and VAT can help assess whether the data points possess significant clustering tendencies. Once cluster tendency is established, the next step involves finding the optimal number of clusters. This can be achieved using methods such as the Elbow Method, Silhouette Analysis, or the Gap Statistic, each providing insights into the most meaningful way to partition the data.
+
+## 3.1 Assessing Cluster Tendency
+
+```{r}
+fviz_pca_ind(
+  prcomp(wdbc),
+  title = "PCA - wdbc",
+  palette = "jco",
+  geom = "point",
+  ggtheme = theme_classic(),
+  legend = "bottom"
+)
+```
+
+### 3.1.1 Hopkins Statistics
+
+```{r}
+set.seed(25)
+
+hopkins_wdbc <- hopkins(wdbc, m = ceiling(nrow(wdbc) / 10))
+hopkins_wdbc
+```
+
+### 3.1.2 Visual Assessment of Cluster Tendency (VAT)
+
+```{r}
+fviz_dist(
+  dist(wdbc),
+  show_labels = FALSE
+) + labs(title = "wdbc")
+```
+
+## 3.2 Finding the Optimal Number of Clusters
+
+### 3.2.1 Elbow Method
+
+```{r}
+wdbc_elbow_kmeans <- fviz_nbclust(wdbc, kmeans, method = "wss") + geom_vline(xintercept = 2, linetype = 2)
+wdbc_elbow_kmeans
+```
+
+### 3.2.2 Silhouette Method
+
+```{r}
+wdbc_silhouette_kmeans <- fviz_nbclust(wdbc, kmeans, method = "silhouette")
+wdbc_silhouette_pam <- fviz_nbclust(wdbc, pam, method = "silhouette")
+
+wdbc_silhouette_kmeans +
+  wdbc_silhouette_pam +
+  plot_layout(ncol = 2)
+```
+
+### 3.2.3 Gap Statistics
+
+# 4. Clustering Analysis
+
+## 4.1 K-Means Clustering
+
+## 4.2 Partitional Around Medoid (PAM) Clustering
+
+## 4.3 Comparing K-Means and PAM
+
+# 5. Cluster Validation
+
+## 5.1 External Validation
+
+## 5.2 Internal Validation
+
+## 5.3 Stability Validation
+
+# 6. Conclusion and Recommendation

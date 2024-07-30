@@ -1,0 +1,510 @@
+---
+title: "DANA4840 Project - Partition Clustering"
+author: "M.Gadimova, A.Mukherjee, R.Shrestha, P.Tating"
+output: html_document
+---
+
+# 1. Research Statement on Breast Cancer Dataset
+Breast cancer is a critical health issue, with early and accurate detection playing a vital role in treatment and patient outcomes. This dataset captures the features of cell nuclei through comprehensive measurements taken during breast cancer biopsies. Each observation spans several measurements and includes characteristics like radius, texture, perimeter, area, and others. Additionally, labels describing the tumor's malignancy or benignity are included in the dataset.
+
+K-Means and Partitioning Around Medoids (PAM) clustering methods will be used to segment the dataset into clusters, validating the tumor's diagnosis of either malignant or benign cases. This clustering analysis not only provides insights into the heterogeneity of breast cancer but also aids in identifying key features that distinguish between benign and malignant cases. The findings can contribute to improving diagnostic accuracy and personalized treatment approaches.
+
+
+# 2. Preliminaries
+Before diving into the cluster analysis, let's first thoroughly examine and understand our data. This preliminary step will allow us to identify key patterns and characteristics within the dataset, ensuring a solid foundation for accurate analysis. By doing so, we can address any potential data quality issues and refine our approach for more meaningful results.
+
+```{r message=FALSE, warning=FALSE}
+library("tidyverse")
+library("factoextra")
+library("dendextend")
+library("hopkins")
+library("corrplot")
+library("cluster")
+library("patchwork")
+library("clValid")
+library("EMCluster")
+```
+
+
+### 2.1. Reading the Data
+```{r}
+wdbc <- read.table("data/wdbc_kaggle.csv", header = T, sep = ",")
+head(wdbc)
+```
+
+### 2.1.1. Checking Data Structure
+
+```{r}
+dim(wdbc)
+str(wdbc)
+```
+We can see that our data comprises 569 instances of breast cancer biopsies and 32 features related to cell nuclei characteristics all of which are numerical variables except for 'Diagnosis' which is a target variable and 'ID' which is a unique identifier.
+
+
+## 2.2. Feature Explanation
+The 'wdbc' dataset includes 32 features as detailed below:
+
+* 'ID' (identifier) - patient ID
+* 'Diagnosis' (categorical) - Diagnosis of breast tissues (M = Malignant, B = Benign)
+* 'radius_mean' (numerical) - Mean of distances from center to points on the perimeter
+* ‘texture_mean’ (numerical) - Standard deviation of gray-scale values
+* ‘perimeter_mean’(numerical) - Mean size of the core tumor
+* ‘area_mean’(numerical) - Mean area of the tumor cells
+* ‘smoothness_mean’ (numerical) - Mean of local variation in radius lengths
+* ‘compactness_mean’ (numerical) - Mean of perimeter^2 / area - 1.0
+* ‘concavity_mean’ (numerical) - Mean of severity of concave portions of the contour
+* ‘concave_points_mean’ (numerical) - Mean for number of concave portions of the contour
+* ‘symmetry_mean’ (numerical) - Mean symmetry of the tumor cells
+* ‘fractal_dimension_mean’ (numerical) - Mean "coastline approximation" of the tumor cells
+* ‘radius_se’ (numerical) - Standard error of the radius of the tumor cells
+* ‘texture_se’ (numerical) - Standard error of the texture of the tumor cells
+* ‘perimeter_se’ (numerical) - Standard error of the perimeter of the tumor cells
+* ‘area_se’ (numerical) - Standard error of the area of the tumor cells
+* ‘smoothness_se’ (numerical) - Standard error of the smoothness of the tumor cells
+* ‘compactness_se’ (numerical) - Standard error of the compactness of the tumor cells
+* ‘concavity_se’ (numerical) - Standard error of the concavity of the tumor cells
+* ‘concave_points_se’ (numerical) - Standard error of the number of concave portions of the contour of the tumor cells
+* ‘symmetry_se’ (numerical) - Standard error of the symmetry of the tumor cells
+* ‘fractal_dimension_se’ (numerical) - Standard error of the "coastline approximation" of the tumor cells
+* ‘radius_worst’(numerical) - Worst (largest) radius of the tumor cells
+* ‘texture_worst’ (numerical) - Worst (most severe) texture of the tumor cells
+* ‘perimeter_worst’ (numerical) - Worst (largest) perimeter of the tumor cells
+* ‘area_worst’ (numerical) - Worst (largest) area of the tumor cells
+* ‘smoothness_worst’ (numerical) - Worst (most severe) smoothness of the tumor cells
+* ‘compactness_worst’ (numerical) - Worst (most severe) compactness of the tumor cells
+* ‘concavity_worst’ (numerical) - Worst (most severe) concavity of the tumor cells
+* ‘concave_points_worst’ (numerical) - Worst (most severe) number of concave portions of the contour of the tumor cells
+* ‘symmetry_worst’ (numerical) - Worst (most severe) symmetry of the tumor cells
+* ‘fractal_dimension_worst’ (numerical) - Worst (most severe) "coastline approximation" of the tumor cells
+
+
+## 2.3. Exploratory Data Analysis
+
+### 2.3.1. Checking Missing Values
+```{r}
+missing_wdbc <- sapply(wdbc, function(x) sum(is.na(x)))
+missing_wdbc
+```
+
+
+### 2.3.2. Boxplots for Different Feature Groups
+```{r}
+color_palette <- rainbow(20)
+
+par(mfrow = c(2, 5))
+
+mean_columns <- grep("_mean", names(wdbc), value = TRUE)
+
+for (i in seq_along(mean_columns)) {
+  column_name <- mean_columns[i]
+
+  boxplot(wdbc[[column_name]] ~ wdbc$diagnosis,
+          xlab = "Diagnosis",
+          ylab = column_name,
+          main = paste(column_name),
+          col = color_palette[i %% length(color_palette) + 1])
+}
+
+par(mfrow = c(1, 1))
+```
+
+```{r}
+par(mfrow = c(2, 5))
+
+se_columns <- grep("_se", names(wdbc), value = TRUE)
+
+for (i in seq_along(se_columns)) {
+  column_name <- se_columns[i]
+
+  boxplot(wdbc[[column_name]] ~ wdbc$diagnosis,
+          xlab = "Diagnosis",
+          ylab = column_name,
+          main = paste(column_name),
+          col = color_palette[i %% length(color_palette) + 2])
+}
+
+par(mfrow = c(1, 1))
+```
+
+```{r}
+par(mfrow = c(2, 5))
+
+worst_columns <- grep("_worst", names(wdbc), value = TRUE)
+
+for (i in seq_along(worst_columns)) {
+  column_name <- worst_columns[i]
+
+  boxplot(wdbc[[column_name]] ~ wdbc$diagnosis,
+          xlab = "Diagnosis",
+          ylab = column_name,
+          main = paste(column_name),
+          col = color_palette[i %% length(color_palette) + 3])
+}
+
+par(mfrow = c(1, 1))
+```
+The malignant (M) diagnosis consistently exhibits higher medians and wider ranges across several features specifically in mean and worst values of the cell nuclei characteristics, indicating that M diagnosis forms a distinct cluster characterized by these statistics.
+
+Several outliers are observed across the features; however, given the clinical nature of the data, the outliers have been retained, as they likely represent natural variations rather than measurement errors.
+
+
+### 2.3.3. Pie Chart for Diagnosis Distribution
+
+```{r}
+diagnosis_freq <- table(wdbc$diagnosis)
+diagnosis_rel_freq <- prop.table(diagnosis_freq) * 100
+diagnosis_rel_freq
+```
+
+```{r}
+pie(diagnosis_rel_freq,
+    main = "% Distribution of Benign/Malignant Cancer",
+    labels = c("B - 62.74%", "M - 37.26%"),
+    col = color_palette)
+```
+Benign cancer makes up approximately 62.9% of the dataset, while Malignant cancer constitutes about 37.1%. Benign cancer cases are approximately 1.69 times more prevalent than Malignant cancer cases in the dataset.
+
+
+## 2.4. Data Pre-processing
+```{r}
+diagnosis <- wdbc$diagnosis
+wdbc_numerical <- wdbc[, -c(1, 2)]
+
+wdbc_scaled <- data.frame(scale(wdbc_numerical))
+rownames(wdbc_scaled) <- wdbc$id
+wdbc <- wdbc_scaled
+head(wdbc)
+```
+Our features have different scale of measurements so we standardized the data to ensure each variable contributes equally to the distance calculations, preventing variables with larger scales to have more weight in the clustering results.
+
+
+# 3. Pre-clustering Assessment
+Before performing clustering analysis, it is crucial to conduct a pre-clustering assessment to evaluate the dataset's cluster tendency and determine the optimal clustering approach. Tools like the Hopkins statistic and VAT can help assess whether the data points possess significant clustering tendencies. Once cluster tendency is established, the next step involves finding the optimal number of clusters. This can be achieved using methods such as the Elbow Method, Silhouette Analysis, or the Gap Statistic, each providing insights into the most meaningful way to partition the data.
+
+
+## 3.1. Assessing Cluster Tendency
+```{r}
+fviz_pca_ind(
+  prcomp(wdbc),
+  title = "PCA - wdbc",
+  habillage = diagnosis,
+  palette = "jco",
+  geom = "point",
+  ggtheme = theme_classic(),
+  legend = "bottom"
+)
+```
+When visualizing our data, we can clearly see how our Benign and Malignant groups are clustered together. However, we have to validate this clustering.
+
+
+### 3.1.1. Hopkins Statistics
+```{r}
+set.seed(69)
+
+hopkins_wdbc <- hopkins(wdbc, m = ceiling(nrow(wdbc) / 10))
+hopkins_wdbc
+```
+A Hopkins statistic value of 1 indicates that the dataset exhibits a high degree of clusterability.
+
+
+### 3.1.2. Visual Assessment of Cluster Tendency (VAT)
+```{r}
+fviz_dist(
+  dist(wdbc, method = "manhattan"),
+  show_labels = FALSE,
+  gradient = list(low = "green", mid = "white", high = "grey")
+) + labs(title = "wdbc")
+```
+Based on the visual assessment and the Hopkins statistic of 0.9999999, the breast cancer dataset is confirmed to be suitable for clustering. Before proceeding with the partitioning clustering analysis, it is essential to determine the optimal number of clusters.
+
+
+## 3.2. Finding the Optimal Number of Clusters
+
+### 3.2.1. Elbow Method
+```{r}
+wdbc_elbow_kmeans <- fviz_nbclust(wdbc, kmeans, method = "wss") + geom_vline(xintercept = 2, linetype = 2)
+wdbc_elbow_kmeans
+```
+
+
+### 3.2.2. Silhouette Method
+```{r}
+wdbc_silhouette_kmeans <- fviz_nbclust(wdbc, kmeans, method = "silhouette0") + labs(title = "K-means Silhouette Method")
+
+wdbc_silhouette_pam <- fviz_nbclust(wdbc, pam, method = "silhouette") + labs(title = "PAM Silhouette Method")
+
+wdbc_silhouette_kmeans +
+  wdbc_silhouette_pam +
+  plot_layout(ncol = 2)
+```
+
+
+### 3.2.3. Gap Statistics
+Below, we calculate the gap statistics for the k-means clustering of the breast cancer dataset:
+```{r}
+calculate_gap_kmeans <- function(data, max_clusters = 10, B = 10) {
+  gap_stat <- clusGap(data, FUN = kmeans, K.max = max_clusters, B = B)
+  gap_stat_values <- as.data.frame(gap_stat$Tab)
+  return(gap_stat_values)
+}
+```
+
+```{r}
+set.seed(101)
+wdbc_matrix <- as.matrix(wdbc)
+max_clusters <- 10
+
+gap_stat_values <- calculate_gap_kmeans(wdbc_matrix, max_clusters, B = 10)
+gap_values <- gap_stat_values$gap
+gap_diff <- gap_values[-length(gap_values)] -
+  gap_values[-1] -
+  gap_stat_values$SE.sim[-1]
+
+gap_stat_data <- data.frame(
+  Clusters = 1:(max_clusters - 1),
+  Gap_Diff = gap_diff
+)
+
+kmeans_gap <- ggplot(gap_stat_data, aes(x = Clusters, y = Gap_Diff)) +
+  geom_bar(stat = "identity", fill = "#4494a4") +
+  labs(title = "K-Means Gap Statistics",
+       x = expression("Number of clusters" ~ K),
+       y = expression(Gap(k) - (Gap(k + 1) - s[k + 1]))) +
+  scale_x_continuous(breaks = 1:max_clusters) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    axis.title = element_text(size = 12)
+  )
+```
+
+Below, we calculate the gap statistics for the PAM clustering of the breast cancer dataset:
+
+```{r}
+calculate_gap_pam <- function(data, max_clusters = 10, B = 10) {
+  gap_stat <- clusGap(data, FUN = pam, K.max = max_clusters, B = B)
+  gap_stat_values <- as.data.frame(gap_stat$Tab)
+  return(gap_stat_values)
+}
+```
+
+```{r}
+set.seed(101)
+wdbc_matrix <- as.matrix(wdbc)
+max_clusters <- 10
+
+gap_stat_values <- calculate_gap_pam(wdbc_matrix, max_clusters, B = 10)
+gap_values <- gap_stat_values$gap
+gap_diff <- gap_values[-length(gap_values)] -
+  gap_values[-1] -
+  gap_stat_values$SE.sim[-1]
+
+## Creating data frame for plotting
+gap_stat_data <- data.frame(
+  Clusters = 1:(max_clusters - 1),
+  Gap_Diff = gap_diff
+)
+
+## Creating the bar plot
+pam_gap <- ggplot(gap_stat_data, aes(x = Clusters, y = Gap_Diff)) +
+  geom_bar(stat = "identity", fill = "#4494a4") +
+  labs(title = "PAM Gap Statistics",
+       x = expression("Number of clusters" ~ K),
+       y = expression(Gap(k) - (Gap(k + 1) - s[k + 1]))) +
+  scale_x_continuous(breaks = 1:max_clusters) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    axis.title = element_text(size = 12)
+  )
+```
+
+```{r}
+kmeans_gap +
+  pam_gap +
+  plot_layout(ncol = 2)
+```
+Both graphs show a notable drop in the gap statistic from 1 to 2 clusters, indicating a significant change in data structure. For the K-Means method, the gap statistic reaches its peak at K=2, with a positive value, before declining for higher values of K. In contrast, the PAM method shows negative gap statistics across all values of K, suggesting that no configuration from K=2 to K=9 offers a better clustering solution than random clustering. However, the most pronounced change still occurs between K=1 and K=2, reinforcing that two clusters best represent the data.
+
+Overall, the elbow, silhouette, and gap statistics methods all suggest K=2 as the optimal number of clusters.
+
+
+# 4. Clustering Analysis
+
+## 4.1. K-Means Clustering
+```{r}
+set.seed(101)
+
+km.res <- kmeans(wdbc, centers = 2, nstart = 100)
+
+kmeans_graph <- fviz_cluster(
+  km.res,
+  data = wdbc,
+  palette = c("red", "blue"),
+  ellipse.type = "convex",
+  star.plot = TRUE,
+  ellipse = TRUE,
+  geom = "point",
+  main = "K-Means Clustering",
+  ggtheme = theme_classic()
+)
+kmeans_graph
+```
+
+## 4.2. Partition Around Medoid (PAM) Clustering
+```{r}
+set.seed(101)
+
+pam.res <- pam(wdbc, k = 2)
+
+pam_graph <- fviz_cluster(
+  pam.res,
+  data = wdbc,
+  palette = c("red", "blue"),
+  ellipse.type = "convex",
+  star.plot = TRUE,
+  ellipse = TRUE,
+  geom = "point",
+  main = "PAM Clustering",
+  ggtheme = theme_classic()
+)
+pam_graph
+```
+
+## 4.3. Comparing K-Means and PAM
+```{r}
+kmeans_graph + pam_graph + plot_layout(ncol = 1)
+```
+We aim for clusters that are compact and well-separated. Upon visual inspection of our plots, we observed that the PAM clusters exhibit slight overlap, indicating that they are not as distinct and well-separated as the clusters formed by K-Means. To verify these observations, we will employ various cluster validation techniques.
+
+
+# 5. Cluster Validation
+
+## 5.1. External Validation
+
+### 5.1.1. Contingency Table - Diagnosis vs. Cluster Results
+```{r}
+## Creating a data frame with diagnosis, k-means and PAM cluster results
+encoded_diagnosis <- ifelse(diagnosis == "M", 1, 2)
+
+wdbc_results <- cbind(
+  wdbc,
+  diagnosis = encoded_diagnosis,
+  kmeans_cluster = km.res$cluster,
+  pam_cluster = pam.res$clustering
+)
+```
+
+```{r}
+kmeans_contingency_table <- table(wdbc_results$diagnosis, wdbc_results$kmeans_cluster)
+kmeans_contingency_table
+```
+
+```{r}
+pam_contingency_table <- table(wdbc_results$diagnosis, wdbc_results$pam_cluster)
+pam_contingency_table
+```
+The contingency table shows that the K-Means method has a 9.33% misclassification rate compared to the ground truth variable, representing the actual diagnosis. In comparison, the PAM method has a slightly higher misclassification rate of 10.92%.
+
+
+### 5.1.2. Rand Index
+```{r}
+kmeans_rand <- RRand(wdbc_results$diagnosis, wdbc_results$kmeans_cluster)
+kmeans_rand
+```
+
+```{r}
+pam_rand <- RRand(wdbc_results$diagnosis, wdbc_results$pam_cluster)
+pam_rand
+```
+The Rand Index (RI) for K-Means clustering is 0.8276, indicating a strong alignment between the clustering results and the actual diagnosis. For the PAM method, the Rand Index is slightly lower at 0.8052, but still reflects a good agreement with the actual diagnosis, though not as high as with K-Means.
+
+
+## 5.2. Internal Validation
+```{r}
+intern_wdbc <- clValid(
+  wdbc,
+  2:6,
+  clMethods = c("kmeans", "hierarchical", "pam"),
+  validation = "internal"
+)
+
+summary(intern_wdbc)
+```
+
+```{r}
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+
+plot(intern_wdbc, legend = FALSE)
+
+plot(
+  nClusters(intern_wdbc),
+  measures(intern_wdbc, "Dunn")[, , 1],
+  type = "n",
+  axes = FALSE,
+  xlab = "",
+  ylab = ""
+)
+legend("center", clusterMethods(intern_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
+```
+* **Connectivity:** The optimal score of 6.7313 is achieved with Hierarchical clustering at 2 clusters. This indicates the most compact clustering with minimal inter-cluster distances.
+* **Dunn Index:** The highest Dunn index of 0.3835 is observed with Hierarchical clustering at 3 clusters, suggesting the best separation between clusters.
+* **Silhouette Width:** The maximum silhouette width of 0.6430 is found with Hierarchical clustering at 2 clusters, reflecting the highest average similarity within clusters and dissimilarity between clusters.
+
+Hierarchical clustering shows the best performance based on all three metrics, suggesting well-defined and separated clusters. K-Means also performs relatively well but shows a decline in cluster quality as the number of clusters increases. PAM, while providing some separation, consistently underperforms compared to the other methods, particularly in terms of connectivity and Dunn Index.
+
+
+## 5.3. Stability Validation
+```{r}
+stab_wdbc <- clValid(
+  wdbc,
+  nClust = 2:6,
+  clMethods = c("hierarchical", "kmeans", "pam"),
+  validation = "stability"
+)
+
+optimal_scores_stab <- optimalScores(stab_wdbc)
+optimal_scores_stab
+```
+
+```{r}
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+
+plot(stab_wdbc, measure = c("APN", "AD", "ADM", "FOM"), legend = FALSE)
+
+plot(
+  nClusters(stab_wdbc),
+  measures(stab_wdbc, "APN")[, , 1],
+  type = "n",
+  axes = FALSE,
+  xlab = "",
+  ylab = ""
+)
+legend("left", clusterMethods(stab_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
+```
+* **APN (Average Path Length):** The lowest APN of 0.0005658954 is achieved with Hierarchical clustering at 3 clusters, indicating minimal average path lengths among clusters.
+* **AD (Average Distance):** The highest AD of 4.8239854590 is found with PAM clustering at 6 clusters, reflecting the average distance within clusters.
+* **ADM (Average Dissimilarity):** The lowest ADM of 0.0179680671 is achieved with Hierarchical clustering at 3 clusters, showing minimal average dissimilarity within clusters.
+* **FOM (Freeman's Measure):** The highest FOM of 0.7178725784 is observed with PAM clustering at 6 clusters, suggesting better clustering performance according to Freeman’s measure.
+* **Hierarchical Clustering with 3 Clusters:** Optimal for APN and ADM, indicating compact and well-defined clusters with minimal average path length and dissimilarity.
+* **PAM Clustering with 6 Clusters:** Optimal for AD and FOM, reflecting more spread-out clusters and superior overall clustering performance based on Freeman’s Measure.
+
+Hierarchical shows best results in all 4 measures with being consistently high in AD and FOM, while being low in both ADM and APN.
+
+
+# 6. Conclusion and Recommendation
+In this study, we utilized partitioning clustering techniques, specifically K-Means and Partitioning Around Medoids (PAM), to analyze the breast cancer dataset. The analysis aimed to distinguish between benign and malignant cases based on the clustering of various tumor cell features.
+
+Our results demonstrated that K-Means clustering provided a slightly better alignment with the actual diagnosis labels compared to PAM, as indicated by a lower mis-classification rate and higher Rand Index.
+
+The optimal number of clusters was determined to be two, based on various validation methods such as the Elbow Method, Silhouette Analysis, and Gap Statistics. This result aligns with the ground truth variable or the known diagnosis between benign and malignant tumor.
+
+These findings can contribute to improving diagnostic accuracy and personalized treatment approaches by identifying key features that differentiate between benign and malignant cases, thereby aiding in early detection and targeted therapies.
+
+The following are recommended for further study:
+
+1. **Advanced Clustering Techniques:** Explore more advanced clustering techniques such as hierarchical clustering or model-based clustering, which may provide deeper insights into the data structure. We've seen on the internal validation that hierarchical performs better.
+
+2. **Further Feature Analysis:** Future research should focus on the significance of individual features and their contributions to the clustering process. This can help in identifying key biomarkers for early detection and treatment planning.
+
+3. **Integration with Clinical Data:** Integrating these clustering results with clinical data such as patient history, treatment outcomes, and genetic information could provide a more holistic understanding of breast cancer subtypes and their respective treatment strategies.

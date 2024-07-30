@@ -82,7 +82,64 @@ str(mtcars)
 ```{r}
 rownames(mtcars)
 ```
+### 2.4.1. Checking Missing Values
+```{r}
+missing_mtcars <- sapply(mtcars, function(x) sum(is.na(x)))
+missing_mtcars
+```
+We don't have  missing values in our dataset
 
+### 2.4.2. Boxplots for Different Features
+```{r}
+color_palette <- rainbow(10)
+
+boxplot(mtcars_numerical_scaled, horizontal = T, col = color_palette)
+```
+The graph presents standardized boxplots for several numerical variables, facilitating a comparative analysis of their distributions. The variables 'qsec', 'hp', and 'disp' exhibit lower medians and narrower ranges compared to 'wt', 'drat', and 'mpg'.
+
+Notably, the variables 'qsec', 'hp', and 'wt' have outliers on the positive side, indicating some data points that are significantly higher than the majority of the data for these variables.
+
+
+### 2.4.3. Bar Plot for Categorical Variables
+```{r}
+plot_cyl <- ggplot(mtcars_categorical, aes(x = factor(cyl), fill = factor(cyl))) +
+  geom_bar() +
+  scale_fill_manual(values = color_palette) +
+  theme_classic() +
+  ggtitle("Cylinders")
+
+plot_vs <- ggplot(mtcars_categorical, aes(x = factor(vs), fill = factor(vs))) +
+  geom_bar() +
+  scale_fill_manual(values = color_palette) +
+  theme_classic() +
+  ggtitle("Engine Shape (vs)")
+
+plot_am <- ggplot(mtcars_categorical, aes(x = factor(am), fill = factor(am))) +
+  geom_bar() +
+  scale_fill_manual(values = color_palette) +
+  theme_classic() +
+  ggtitle("Transmission (am)")
+
+plot_gear <- ggplot(mtcars_categorical, aes(x = factor(gear), fill = factor(gear))) +
+  geom_bar() +
+  scale_fill_manual(values = color_palette) +
+  theme_classic() +
+  ggtitle("Gears")
+
+plot_carb <- ggplot(mtcars_categorical, aes(x = factor(carb), fill = factor(carb))) +
+  geom_bar() +
+  scale_fill_manual(values = color_palette) +
+  theme_classic() +
+  ggtitle("Carburetors")
+
+grid.arrange(plot_cyl, plot_vs, plot_am, plot_gear, plot_carb, ncol = 3)
+```
+
+- **Cylinders (cyl):** Cars with 8 cylinders are the most common, followed by those with 4 and 6 cylinders.
+- **Engine Shape (vs):** This plot categorizes cars based on engine shape, where 0 represent a V-shaped engine and 1 a straight engine. More cars have the V-shaped type of engine shape compared to the straight type.
+- **Transmission (am):** This plot indicates the type of transmission, with 0 representing automatic and 1 manual. There are more cars with the automatic type of transmission than the manual type.
+- **Gears (gear):** This plot shows the count of cars based on the number of gears. Cars with 3 gears are the most prevalent, followed by those with 4 and 5 gears.
+- **Carburetors (carb):** Cars with 2 carburetors are the most common, followed by those with 4 and 1. There are fewer cars with 6 and 8 carburetors.
 
 ## 2.5 Data Pre-processing
 
