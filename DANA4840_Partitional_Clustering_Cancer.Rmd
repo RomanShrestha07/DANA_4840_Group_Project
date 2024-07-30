@@ -1,6 +1,6 @@
 ---
-title: "DANA4840 Project - Partition Clustering"
-author: "M.Gadimova, A.Mukherjee, R.Shrestha, P.Tating"
+title: "DANA 4840 Project - Partition Clustering"
+author: "Aryan, Maryam, Patricia, Roman"
 output: html_document
 ---
 
@@ -13,7 +13,7 @@ K-Means and Partitioning Around Medoids (PAM) clustering methods will be used to
 # 2. Preliminaries
 Before diving into the cluster analysis, let's first thoroughly examine and understand our data. This preliminary step will allow us to identify key patterns and characteristics within the dataset, ensuring a solid foundation for accurate analysis. By doing so, we can address any potential data quality issues and refine our approach for more meaningful results.
 
-```{r message=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE}
 library("tidyverse")
 library("factoextra")
 library("dendextend")
@@ -28,12 +28,11 @@ library("EMCluster")
 
 ### 2.1. Reading the Data
 ```{r}
-wdbc <- read.table("data/wdbc_kaggle.csv", header = T, sep = ",")
+wdbc <- read.table("data/wdbc.csv", header = T, sep = ",")
 head(wdbc)
 ```
 
 ### 2.1.1. Checking Data Structure
-
 ```{r}
 dim(wdbc)
 str(wdbc)
@@ -149,7 +148,6 @@ Several outliers are observed across the features; however, given the clinical n
 
 
 ### 2.3.3. Pie Chart for Diagnosis Distribution
-
 ```{r}
 diagnosis_freq <- table(wdbc$diagnosis)
 diagnosis_rel_freq <- prop.table(diagnosis_freq) * 100
@@ -175,7 +173,7 @@ rownames(wdbc_scaled) <- wdbc$id
 wdbc <- wdbc_scaled
 head(wdbc)
 ```
-Our features have different scale of measurements so we standardized the data to ensure each variable contributes equally to the distance calculations, preventing variables with larger scales to have more weight in the clustering results.
+Our features have different scale of measurements, so we standardized the data to ensure each variable contributes equally to the distance calculations, preventing variables with larger scales to have more weight in the clustering results.
 
 
 # 3. Pre-clustering Assessment
@@ -204,7 +202,7 @@ set.seed(69)
 hopkins_wdbc <- hopkins(wdbc, m = ceiling(nrow(wdbc) / 10))
 hopkins_wdbc
 ```
-A Hopkins statistic value of 1 indicates that the dataset exhibits a high degree of clusterability.
+A Hopkins statistic value of 0.9999997 indicates that the dataset exhibits a high degree of clusterability.
 
 
 ### 3.1.2. Visual Assessment of Cluster Tendency (VAT)
@@ -215,7 +213,7 @@ fviz_dist(
   gradient = list(low = "green", mid = "white", high = "grey")
 ) + labs(title = "wdbc")
 ```
-Based on the visual assessment and the Hopkins statistic of 0.9999999, the breast cancer dataset is confirmed to be suitable for clustering. Before proceeding with the partitioning clustering analysis, it is essential to determine the optimal number of clusters.
+Based on the visual assessment and the Hopkins statistic of 0.9999997, the breast cancer dataset is confirmed to be suitable for clustering. Before proceeding with the partitioning clustering analysis, it is essential to determine the optimal number of clusters.
 
 
 ## 3.2. Finding the Optimal Number of Clusters
@@ -229,7 +227,7 @@ wdbc_elbow_kmeans
 
 ### 3.2.2. Silhouette Method
 ```{r}
-wdbc_silhouette_kmeans <- fviz_nbclust(wdbc, kmeans, method = "silhouette0") + labs(title = "K-means Silhouette Method")
+wdbc_silhouette_kmeans <- fviz_nbclust(wdbc, kmeans, method = "silhouette") + labs(title = "K-means Silhouette Method")
 
 wdbc_silhouette_pam <- fviz_nbclust(wdbc, pam, method = "silhouette") + labs(title = "PAM Silhouette Method")
 
@@ -242,82 +240,56 @@ wdbc_silhouette_kmeans +
 ### 3.2.3. Gap Statistics
 Below, we calculate the gap statistics for the k-means clustering of the breast cancer dataset:
 ```{r}
-calculate_gap_kmeans <- function(data, max_clusters = 10, B = 10) {
-  gap_stat <- clusGap(data, FUN = kmeans, K.max = max_clusters, B = B)
-  gap_stat_values <- as.data.frame(gap_stat$Tab)
-  return(gap_stat_values)
+get_cluster_diff <- function(gap_stat, max_k = 10) {
+  gap_df <- as.data.frame(gap_stat$Tab)
+
+  gap_diff_list <- vector()
+  gap_val_list <- gap_df$gap
+  s_val_list <- gap_df$SE.sim
+
+  for (k in 1:max_k) {
+    if (k < max_k - 1) {
+      val <- gap_val_list[k] -
+        (gap_val_list[k + 1] -
+          s_val_list[k + 1])
+
+      gap_diff_list <- append(gap_diff_list, val)
+    }
+  }
+
+  return(gap_diff_list)
 }
-```
 
-```{r}
-set.seed(101)
-wdbc_matrix <- as.matrix(wdbc)
-max_clusters <- 10
+max_k <- 10
+gap_stat <- clusGap(wdbc, kmeans, K.max = max_k, B = 500)
+gap_diff_list <- get_cluster_diff(gap_stat, max_k)
+pos_neg_df <- data.frame(cluster = factor(seq_along(gap_diff_list)), gap_diff = gap_diff_list)
 
-gap_stat_values <- calculate_gap_kmeans(wdbc_matrix, max_clusters, B = 10)
-gap_values <- gap_stat_values$gap
-gap_diff <- gap_values[-length(gap_values)] -
-  gap_values[-1] -
-  gap_stat_values$SE.sim[-1]
-
-gap_stat_data <- data.frame(
-  Clusters = 1:(max_clusters - 1),
-  Gap_Diff = gap_diff
-)
-
-kmeans_gap <- ggplot(gap_stat_data, aes(x = Clusters, y = Gap_Diff)) +
-  geom_bar(stat = "identity", fill = "#4494a4") +
-  labs(title = "K-Means Gap Statistics",
-       x = expression("Number of clusters" ~ K),
-       y = expression(Gap(k) - (Gap(k + 1) - s[k + 1]))) +
-  scale_x_continuous(breaks = 1:max_clusters) +
-  theme_classic() +
-  theme(
-    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-    axis.title = element_text(size = 12)
-  )
+kmeans_gap <- ggplot(data = pos_neg_df, aes(x = cluster, y = gap_diff)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  xlab("Number of clusters K") +
+  ylab("Gap(k) - (Gap(k+1) - Sk+1)") +
+  ggtitle("Gap Statistic for K-means Clustering") +
+  theme_classic()
+kmeans_gap
 ```
 
 Below, we calculate the gap statistics for the PAM clustering of the breast cancer dataset:
-
 ```{r}
-calculate_gap_pam <- function(data, max_clusters = 10, B = 10) {
-  gap_stat <- clusGap(data, FUN = pam, K.max = max_clusters, B = B)
-  gap_stat_values <- as.data.frame(gap_stat$Tab)
-  return(gap_stat_values)
-}
+max_k <- 10
+gap_stat <- clusGap(wdbc, pam, K.max = max_k, B = 500)
+gap_diff_list <- get_cluster_diff(gap_stat, max_k)
+pos_neg_df <- data.frame(cluster = factor(seq_along(gap_diff_list)), gap_diff = gap_diff_list)
+
+pam_gap <- ggplot(data = pos_neg_df, aes(x = cluster, y = gap_diff)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  xlab("Number of clusters K") +
+  ylab("Gap(k) - (Gap(k+1) - Sk+1)") +
+  ggtitle("Gap Statistic for PAM Clustering") +
+  theme_classic()
+pam_gap
 ```
 
-```{r}
-set.seed(101)
-wdbc_matrix <- as.matrix(wdbc)
-max_clusters <- 10
-
-gap_stat_values <- calculate_gap_pam(wdbc_matrix, max_clusters, B = 10)
-gap_values <- gap_stat_values$gap
-gap_diff <- gap_values[-length(gap_values)] -
-  gap_values[-1] -
-  gap_stat_values$SE.sim[-1]
-
-## Creating data frame for plotting
-gap_stat_data <- data.frame(
-  Clusters = 1:(max_clusters - 1),
-  Gap_Diff = gap_diff
-)
-
-## Creating the bar plot
-pam_gap <- ggplot(gap_stat_data, aes(x = Clusters, y = Gap_Diff)) +
-  geom_bar(stat = "identity", fill = "#4494a4") +
-  labs(title = "PAM Gap Statistics",
-       x = expression("Number of clusters" ~ K),
-       y = expression(Gap(k) - (Gap(k + 1) - s[k + 1]))) +
-  scale_x_continuous(breaks = 1:max_clusters) +
-  theme_classic() +
-  theme(
-    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-    axis.title = element_text(size = 12)
-  )
-```
 
 ```{r}
 kmeans_gap +
@@ -327,6 +299,8 @@ kmeans_gap +
 Both graphs show a notable drop in the gap statistic from 1 to 2 clusters, indicating a significant change in data structure. For the K-Means method, the gap statistic reaches its peak at K=2, with a positive value, before declining for higher values of K. In contrast, the PAM method shows negative gap statistics across all values of K, suggesting that no configuration from K=2 to K=9 offers a better clustering solution than random clustering. However, the most pronounced change still occurs between K=1 and K=2, reinforcing that two clusters best represent the data.
 
 Overall, the elbow, silhouette, and gap statistics methods all suggest K=2 as the optimal number of clusters.
+
+TODO: interpretation
 
 
 # 4. Clustering Analysis

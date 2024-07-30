@@ -4,8 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="648550f5-50e6-4136-94de-c940c6745bcf" name="Changes" comment="- Updated README.md&#10;- project file structure fix">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="648550f5-50e6-4136-94de-c940c6745bcf" name="Changes" comment="- project file structure fix">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DANA4840_Hierarchical_Clustering_Cars.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/DANA4840_Hierarchical_Clustering_Cars.Rmd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DANA4840_Partitional_Clustering_Cancer.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/DANA4840_Partitional_Clustering_Cancer.Rmd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/images/Rplot01.png" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -86,6 +89,7 @@
     <MESSAGE value="- fixed up hierarchical code" />
     <MESSAGE value="- fixed up kmeans/pam code" />
     <MESSAGE value="- Updated README.md&#10;- project file structure fix" />
-    <option name="LAST_COMMIT_MESSAGE" value="- Updated README.md&#10;- project file structure fix" />
+    <MESSAGE value="- project file structure fix" />
+    <option name="LAST_COMMIT_MESSAGE" value="- project file structure fix" />
   </component>
 </project>
