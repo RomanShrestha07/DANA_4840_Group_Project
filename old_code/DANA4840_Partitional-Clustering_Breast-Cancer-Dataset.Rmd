@@ -72,7 +72,7 @@ head(wdbc)
 
 # 3. Pre-clustering Assessment
 
-Before performing clustering analysis, it is crucial to conduct a pre-clustering assessment to evaluate the dataset's cluster tendency and determine the optimal clustering approach. Tools like the Hopkins statistic and VAT can help assess whether the data points possess significant clustering tendencies. Once cluster tendency is established, the next step involves finding the optimal number of clusters. This can be achieved using methods such as the Elbow Method, Silhouette Analysis, or the Gap Statistic, each providing insights into the most meaningful way to partition the data. 
+Before performing clustering analysis, it is crucial to conduct a pre-clustering assessment to evaluate the dataset's cluster tendency and determine the optimal clustering approach. Tools like the Hopkins statistic and VAT can help assess whether the data points possess significant clustering tendencies. Once cluster tendency is established, the next step involves finding the optimal number of clusters. This can be achieved using methods such as the Elbow Method, Silhouette Analysis, or the Gap Statistic, each providing insights into the most meaningful way to partition the data.
 
 ## 3.1 Assessing Cluster Tendency
 
@@ -129,9 +129,9 @@ wdbc_silhouette_kmeans +
 
 # 4. Clustering Analysis
 
-## 4.1 K-Means Clustering 
+## 4.1 K-Means Clustering
 
-## 4.2 Partitional Around Medoid (PAM) Clustering 
+## 4.2 Partitional Around Medoid (PAM) Clustering
 
 ## 4.3 Comparing K-Means and PAM
 

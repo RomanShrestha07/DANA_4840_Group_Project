@@ -1,16 +1,12 @@
-<<<<<<< HEAD
 ---
 title: "DANA4840 Project - Hierarchical Clustering"
 author: "M.Gadimova, A.Mukherjee, R.Shrestha, P.Tating"
-date: "`r Sys.Date()`"
-output:
-  pdf_document: default
-  html_document: default
+output: html_document
 ---
 
 # 1. Research Statement on Cars Dataset
 
-The automobile industry continually seeks to understand the characteristics and performance of various car models in order to meet the varied needs of its customers. The given dataset contains numerous characteristics that can be used to categorize cars into different groups, including weight (wt), horsepower (hp), engine displacement (disp), and miles per gallon (mpg). 
+The automobile industry continually seeks to understand the characteristics and performance of various car models in order to meet the varied needs of its customers. The given dataset contains numerous characteristics that can be used to categorize cars into different groups, including weight (wt), horsepower (hp), engine displacement (disp), and miles per gallon (mpg).
 
 The objective of this analysis is to segment the car models into clusters that represent different types of vehicles. This can help in understanding the underlying patterns in the data, such as identifying clusters of high-performance sports cars, fuel-efficient vehicles, or family-oriented models.Additionally, by using this clustering, marketers and producers can more successfully target particular customer categories.
 
@@ -114,7 +110,7 @@ head(mtcars)
 
 # 3. Pre-clustering Assessment
 
-Before performing clustering analysis, it is crucial to conduct a pre-clustering assessment to evaluate the dataset's cluster tendency and determine the optimal clustering approach. Tools like the Hopkins statistic and VAT can help assess whether the data points possess significant clustering tendencies. Once cluster tendency is established, the next step involves finding the optimal number of clusters. This can be achieved using methods such as the Elbow Method, Silhouette Analysis, or the Gap Statistic, each providing insights into the most meaningful way to partition the data. 
+Before performing clustering analysis, it is crucial to conduct a pre-clustering assessment to evaluate the dataset's cluster tendency and determine the optimal clustering approach. Tools like the Hopkins statistic and VAT can help assess whether the data points possess significant clustering tendencies. Once cluster tendency is established, the next step involves finding the optimal number of clusters. This can be achieved using methods such as the Elbow Method, Silhouette Analysis, or the Gap Statistic, each providing insights into the most meaningful way to partition the data.
 
 ## 3.1 Assessing Cluster Tendency
 
@@ -276,7 +272,7 @@ ward_d_dendrogram
 ```{r}
 cor(res.dist, cophenetic(hc_ward_d))
 ```
-#### The high correlation coefficient of 0.7494 demonstrates that Ward's hierarchical clustering method maintains a strong consistency with the original distance relationships between data points. 
+#### The high correlation coefficient of 0.7494 demonstrates that Ward's hierarchical clustering method maintains a strong consistency with the original distance relationships between data points.
 
 ### 4.1.5 Ward.D2 Method
 
@@ -303,7 +299,7 @@ ward_d2_dendrogram
 cor(res.dist, cophenetic(hc_ward_d2))
 ```
 
-#### The high correlation coefficient of 0.7667039 demonstrates that Ward's hierarchical clustering method maintains a strong consistency with the original distance relationships between data points. 
+#### The high correlation coefficient of 0.7667039 demonstrates that Ward's hierarchical clustering method maintains a strong consistency with the original distance relationships between data points.
 
 ## 4.2 Comparing Dendograms
 
@@ -421,13 +417,13 @@ title: "DANA4840 Project - Hierarchical Clustering"
 author: "M.Gadimova, A.Mukherjee, R.Shrestha, P.Tating"
 date: "`r Sys.Date()`"
 output:
-  pdf_document: default
-  html_document: default
+pdf_document: default
+html_document: default
 ---
 
 # 1. Research Statement on Cars Dataset
 
-The automobile industry continually seeks to understand the characteristics and performance of various car models in order to meet the varied needs of its customers. The given dataset contains numerous characteristics that can be used to categorize cars into different groups, including weight (wt), horsepower (hp), engine displacement (disp), and miles per gallon (mpg). 
+The automobile industry continually seeks to understand the characteristics and performance of various car models in order to meet the varied needs of its customers. The given dataset contains numerous characteristics that can be used to categorize cars into different groups, including weight (wt), horsepower (hp), engine displacement (disp), and miles per gallon (mpg).
 
 The objective of this analysis is to segment the car models into clusters that represent different types of vehicles. This can help in understanding the underlying patterns in the data, such as identifying clusters of high-performance sports cars, fuel-efficient vehicles, or family-oriented models.Additionally, by using this clustering, marketers and producers can more successfully target particular customer categories.
 
@@ -531,7 +527,7 @@ head(mtcars)
 
 # 3. Pre-clustering Assessment
 
-Before performing clustering analysis, it is crucial to conduct a pre-clustering assessment to evaluate the dataset's cluster tendency and determine the optimal clustering approach. Tools like the Hopkins statistic and VAT can help assess whether the data points possess significant clustering tendencies. Once cluster tendency is established, the next step involves finding the optimal number of clusters. This can be achieved using methods such as the Elbow Method, Silhouette Analysis, or the Gap Statistic, each providing insights into the most meaningful way to partition the data. 
+Before performing clustering analysis, it is crucial to conduct a pre-clustering assessment to evaluate the dataset's cluster tendency and determine the optimal clustering approach. Tools like the Hopkins statistic and VAT can help assess whether the data points possess significant clustering tendencies. Once cluster tendency is established, the next step involves finding the optimal number of clusters. This can be achieved using methods such as the Elbow Method, Silhouette Analysis, or the Gap Statistic, each providing insights into the most meaningful way to partition the data.
 
 ## 3.1 Assessing Cluster Tendency
 
@@ -790,5 +786,4 @@ legend("center", clusterMethods(stab_mtcars), col = 1:9, lty = 1:9, pch = paste(
 par(op)
 ```
 
->>>>>>> a1bfa5c6e1fc8adc5551a3faa0d470a36300cc8b
 # 6. Conclusion and Recommendation

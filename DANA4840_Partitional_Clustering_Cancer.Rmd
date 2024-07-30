@@ -1,10 +1,7 @@
 ---
-title: "DANA4840 Project - Partitional Clustering"
+title: "DANA4840 Project - Partition Clustering"
 author: "M.Gadimova, A.Mukherjee, R.Shrestha, P.Tating"
-date: "`r Sys.Date()`"
-output:
-  pdf_document: default
-  html_document: default
+output: html_document
 ---
 
 # 1. Research Statement on Breast Cancer Dataset
@@ -147,10 +144,10 @@ missing_wdbc
 ```{r}
 color_palette <- c("#4494a4", "#7ca454", "#f9d448", "#9fc4b7", "#fcea9e", "#a6ccd4")
 
-par(mfrow = c(2, 5)) 
+par(mfrow = c(2, 5))
 
 for (i in 3:12) {
-  column_name <- colnames(wdbc)[i]  
+  column_name <- colnames(wdbc)[i]
   boxplot(wdbc[[column_name]] ~ wdbc$Diagnosis,
           xlab = "Diagnosis", ylab = column_name,
           main = paste(column_name),
@@ -161,10 +158,10 @@ par(mfrow = c(1, 1))
 ```
 
 ```{r}
-par(mfrow = c(2, 5)) 
+par(mfrow = c(2, 5))
 
 for (i in 13:22) {
-  column_name <- colnames(wdbc)[i]  
+  column_name <- colnames(wdbc)[i]
   boxplot(wdbc[[column_name]] ~ wdbc$Diagnosis,
           xlab = "Diagnosis", ylab = column_name,
           main = paste(column_name),
@@ -175,10 +172,10 @@ par(mfrow = c(1, 1))
 ```
 
 ```{r}
-par(mfrow = c(2, 5)) 
+par(mfrow = c(2, 5))
 
 for (i in 21:30) {
-  column_name <- colnames(wdbc)[i]  
+  column_name <- colnames(wdbc)[i]
   boxplot(wdbc[[column_name]] ~ wdbc$Diagnosis,
           xlab = "Diagnosis", ylab = column_name,
           main = paste(column_name),
@@ -203,8 +200,8 @@ diagnosis_rel_freq
 ```
 
 ```{r}
-pie(diagnosis_rel_freq, 
-    main = "% Distribution of Benign/Malignant Cancer", 
+pie(diagnosis_rel_freq,
+    main = "% Distribution of Benign/Malignant Cancer",
     labels = c("B - 62.85%", "M - 37.15%"),
     col = color_palette)
 ```
@@ -229,7 +226,7 @@ Our features have different scale of measurements so we standardized the data to
 
 # 3. Pre-clustering Assessment
 
-Before performing clustering analysis, it is crucial to conduct a pre-clustering assessment to evaluate the dataset's cluster tendency and determine the optimal clustering approach. Tools like the Hopkins statistic and VAT can help assess whether the data points possess significant clustering tendencies. Once cluster tendency is established, the next step involves finding the optimal number of clusters. This can be achieved using methods such as the Elbow Method, Silhouette Analysis, or the Gap Statistic, each providing insights into the most meaningful way to partition the data. 
+Before performing clustering analysis, it is crucial to conduct a pre-clustering assessment to evaluate the dataset's cluster tendency and determine the optimal clustering approach. Tools like the Hopkins statistic and VAT can help assess whether the data points possess significant clustering tendencies. Once cluster tendency is established, the next step involves finding the optimal number of clusters. This can be achieved using methods such as the Elbow Method, Silhouette Analysis, or the Gap Statistic, each providing insights into the most meaningful way to partition the data.
 
 ## 3.1. Assessing Cluster Tendency
 
@@ -274,7 +271,7 @@ Based on the visual assessment and the Hopkins statistic of 0.9999999, the breas
 ### 3.2.1. Elbow Method
 
 ```{r}
-wdbc_elbow_kmeans <- fviz_nbclust(wdbc, kmeans, method = "wss") + 
+wdbc_elbow_kmeans <- fviz_nbclust(wdbc, kmeans, method = "wss") +
   geom_vline(xintercept = 2, linetype = 2)
 wdbc_elbow_kmeans
 ```
@@ -312,7 +309,9 @@ max_clusters <- 10
 
 gap_stat_values <- calculate_gap_kmeans(wdbc_matrix, max_clusters, B = 10)
 gap_values <- gap_stat_values$gap
-gap_diff <- gap_values[-length(gap_values)] - gap_values[-1] - gap_stat_values$SE.sim[-1]
+gap_diff <- gap_values[-length(gap_values)] -
+  gap_values[-1] -
+  gap_stat_values$SE.sim[-1]
 
 ## Creating data frame for plotting
 gap_stat_data <- data.frame(
@@ -323,9 +322,9 @@ gap_stat_data <- data.frame(
 ## Creating the bar plot
 kmeans_gap <- ggplot(gap_stat_data, aes(x = Clusters, y = Gap_Diff)) +
   geom_bar(stat = "identity", fill = "#4494a4") +
-  labs(title = "K-Means Gap Statistics", 
-       x = expression("Number of clusters"~K), 
-       y = expression(Gap(k) - (Gap(k + 1) - s[k + 1]))) +              
+  labs(title = "K-Means Gap Statistics",
+       x = expression("Number of clusters" ~ K),
+       y = expression(Gap(k) - (Gap(k + 1) - s[k + 1]))) +
   scale_x_continuous(breaks = 1:max_clusters) +
   theme_classic() +
   theme(
@@ -351,7 +350,9 @@ max_clusters <- 10
 
 gap_stat_values <- calculate_gap_pam(wdbc_matrix, max_clusters, B = 10)
 gap_values <- gap_stat_values$gap
-gap_diff <- gap_values[-length(gap_values)] - gap_values[-1] - gap_stat_values$SE.sim[-1]
+gap_diff <- gap_values[-length(gap_values)] -
+  gap_values[-1] -
+  gap_stat_values$SE.sim[-1]
 
 ## Creating data frame for plotting
 gap_stat_data <- data.frame(
@@ -360,11 +361,11 @@ gap_stat_data <- data.frame(
 )
 
 ## Creating the bar plot
-pam_gap <-ggplot(gap_stat_data, aes(x = Clusters, y = Gap_Diff)) +
+pam_gap <- ggplot(gap_stat_data, aes(x = Clusters, y = Gap_Diff)) +
   geom_bar(stat = "identity", fill = "#4494a4") +
-  labs(title = "PAM Gap Statistics", 
-       x = expression("Number of clusters"~K), 
-       y = expression(Gap(k) - (Gap(k + 1) - s[k + 1]))) +              
+  labs(title = "PAM Gap Statistics",
+       x = expression("Number of clusters" ~ K),
+       y = expression(Gap(k) - (Gap(k + 1) - s[k + 1]))) +
   scale_x_continuous(breaks = 1:max_clusters) +
   theme_classic() +
   theme(
@@ -386,7 +387,7 @@ Overall, the elbow, silhouette, and gap statistics methods all suggest K=2 as th
 
 # 4. Clustering Analysis
 
-## 4.1. K-Means Clustering 
+## 4.1. K-Means Clustering
 
 ```{r}
 set.seed(101)
@@ -407,7 +408,7 @@ kmeans_graph <- fviz_cluster(
 kmeans_graph
 ```
 
-## 4.2. Partitional Around Medoid (PAM) Clustering 
+## 4.2. Partitional Around Medoid (PAM) Clustering
 
 ```{r}
 set.seed(101)
@@ -446,9 +447,9 @@ We aim for clusters that are compact and well-separated. Upon visual inspection 
 ```{r}
 ## Creating a data frame with diagnosis, k-means and PAM cluster results
 encoded_diagnosis <- ifelse(diagnosis == "M", 1, 2)
-wdbc_results <- cbind(wdbc, 
-                      diagnosis = encoded_diagnosis, 
-                      kmeans_cluster = km.res$cluster, 
+wdbc_results <- cbind(wdbc,
+                      diagnosis = encoded_diagnosis,
+                      kmeans_cluster = km.res$cluster,
                       pam_cluster = pam.res$clustering)
 ```
 
@@ -482,8 +483,8 @@ The Rand Index (RI) for K-Means clustering is 0.8276, indicating a strong alignm
 ## 5.2. Internal Validation
 
 ```{r}
-intern_wdbc <- clValid(wdbc, 2:6, 
-                       clMethods = c("kmeans", "hierarchical", "pam"), 
+intern_wdbc <- clValid(wdbc, 2:6,
+                       clMethods = c("kmeans", "hierarchical", "pam"),
                        validation = "internal")
 
 summary(intern_wdbc)
@@ -495,8 +496,8 @@ par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
 
 plot(intern_wdbc, legend = FALSE)
 
-plot(nClusters(intern_wdbc), 
-     measures(intern_wdbc, "Dunn")[, , 1], 
+plot(nClusters(intern_wdbc),
+     measures(intern_wdbc, "Dunn")[, , 1],
      type = "n", axes = FALSE, xlab = "", ylab = "")
 legend("center", clusterMethods(intern_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
 
@@ -515,9 +516,9 @@ Hierarchical clustering shows the best performance based on all three metrics, s
 ## 5.3. Stability Validation
 
 ```{r}
-stab_wdbc <- clValid(wdbc, 
-                     nClust = 2:6, 
-                     clMethods = c("hierarchical", "kmeans", "pam"), 
+stab_wdbc <- clValid(wdbc,
+                     nClust = 2:6,
+                     clMethods = c("hierarchical", "kmeans", "pam"),
                      validation = "stability")
 
 optimal_scores_stab <- optimalScores(stab_wdbc)
@@ -529,8 +530,8 @@ par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
 
 plot(stab_wdbc, measure = c("APN", "AD", "ADM", "FOM"), legend = FALSE)
 
-plot(nClusters(stab_wdbc), 
-     measures(stab_wdbc, "APN")[, , 1], 
+plot(nClusters(stab_wdbc),
+     measures(stab_wdbc, "APN")[, , 1],
      type = "n", axes = FALSE, xlab = "", ylab = "")
 legend("left", clusterMethods(stab_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
 ```
@@ -547,7 +548,7 @@ legend("left", clusterMethods(stab_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9)
 
 * **PAM Clustering with 6 Clusters:** Optimal for AD and FOM, reflecting more spread-out clusters and superior overall clustering performance based on Freeman’s Measure.
 
-Hierarchical shows best results in all 4 measures with being consistently high in AD and FOM, while being low in both ADM and APN. 
+Hierarchical shows best results in all 4 measures with being consistently high in AD and FOM, while being low in both ADM and APN.
 
 
 # 6. Conclusion and Recommendation
@@ -567,26 +568,3 @@ The following are recommended for further study:
 2. **Further Feature Analysis:** Future research should focus on the significance of individual features and their contributions to the clustering process. This can help in identifying key biomarkers for early detection and treatment planning.
 
 3. **Integration with Clinical Data:** Integrating these clustering results with clinical data such as patient history, treatment outcomes, and genetic information could provide a more holistic understanding of breast cancer subtypes and their respective treatment strategies.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
