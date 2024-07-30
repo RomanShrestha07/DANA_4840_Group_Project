@@ -55,7 +55,7 @@ colnames(wdbc) <- correct_column_names
 head(wdbc)
 ```
 
-### 2.1.2. Checking Data Structure
+### 2.1.1. Checking Data Structure
 
 ```{r}
 str(wdbc)
@@ -135,14 +135,14 @@ The 'wdbc' dataset includes 32 features as detailed below:
 
 ## 2.3. Exploratory Data Analysis
 
-#### 2.3.1. Checking Missing Values
+### 2.3.1. Checking Missing Values
 
 ```{r}
 missing_wdbc <- sapply(wdbc, function(x) sum(is.na(x)))
 missing_wdbc
 ```
 
-#### 2.3.2. Boxplots for Different Feature Groups
+### 2.3.2. Boxplots for Different Feature Groups
 
 ```{r}
 color_palette <- c("#4494a4", "#7ca454", "#f9d448", "#9fc4b7", "#fcea9e", "#a6ccd4")
@@ -194,7 +194,7 @@ Several outliers are observed across the features; however, given the clinical n
 
 
 
-#### 2.3.3. Pie Chart for Diagnosis Distribution
+### 2.3.3. Pie Chart for Diagnosis Distribution
 
 ```{r}
 diagnosis_freq <- table(wdbc$Diagnosis)
@@ -209,7 +209,7 @@ pie(diagnosis_rel_freq,
     col = color_palette)
 ```
 
-Observed diagnosis is 63% Benign (B) and 37% Malignant (M).
+Benign cancer makes up approximately 62.9% of the dataset, while Malignant cancer constitutes about 37.1%. Benign cancer cases are approximately 1.69 times more prevalent than Malignant cancer cases in the dataset.
 
 
 ## 2.4. Data Pre-processing
@@ -255,6 +255,7 @@ set.seed(25)
 hopkins_wdbc <- hopkins(wdbc, m = ceiling(nrow(wdbc) / 10))
 hopkins_wdbc
 ```
+A Hopkins statistic value of 1 indicates that the dataset exhibits a high degree of clusterability.
 
 ### 3.1.2. Visual Assessment of Cluster Tendency (VAT)
 
@@ -432,6 +433,7 @@ pam_graph
 ```{r}
 kmeans_graph + pam_graph + plot_layout(ncol = 1)
 ```
+
 We aim for clusters that are compact and well-separated. Upon visual inspection of our plots, we observed that the PAM clusters exhibit slight overlap, indicating that they are not as distinct and well-separated as the clusters formed by K-Means. To verify these observations, we will employ various cluster validation techniques.
 
 
@@ -501,7 +503,13 @@ legend("center", clusterMethods(intern_wdbc), col = 1:9, lty = 1:9, pch = paste(
 par(op)
 ```
 
-Hierarchical clustering shows the best performance based on the Dunn Index and Silhouette Score, suggesting well-defined and separated clusters. K-Means also performs relatively well but shows a decline in cluster quality as the number of clusters increases. PAM, while providing some separation, consistently underperforms compared to the other methods, particularly in terms of connectivity and Dunn Index.
+* **Connectivity:** The optimal score of 6.7313 is achieved with Hierarchical clustering at 2 clusters. This indicates the most compact clustering with minimal inter-cluster distances.
+
+* **Dunn Index:** The highest Dunn index of 0.3835 is observed with Hierarchical clustering at 3 clusters, suggesting the best separation between clusters.
+
+* **Silhouette Width:** The maximum silhouette width of 0.6430 is found with Hierarchical clustering at 2 clusters, reflecting the highest average similarity within clusters and dissimilarity between clusters.
+
+Hierarchical clustering shows the best performance based on all three metrics, suggesting well-defined and separated clusters. K-Means also performs relatively well but shows a decline in cluster quality as the number of clusters increases. PAM, while providing some separation, consistently underperforms compared to the other methods, particularly in terms of connectivity and Dunn Index.
 
 
 ## 5.3. Stability Validation
@@ -527,9 +535,20 @@ plot(nClusters(stab_wdbc),
 legend("left", clusterMethods(stab_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
 ```
 
-**TO DO: Interpretation of stability**
+* **APN (Average Path Length):** The lowest APN of 0.0005658954 is achieved with Hierarchical clustering at 3 clusters, indicating minimal average path lengths among clusters.
 
-From chatGPT - I don't want to take something  I don't understand - Overall, hierarchical clustering shows the highest stability in terms of APN and ADM, especially with 2 clusters. The PAM method, while having the lowest AD score, indicates stable centroids but not necessarily the best clustering quality. K-Means provides the best clustering quality (lowest FOM) but is less stable than hierarchical clustering according to APN and ADM metrics.
+* **AD (Average Distance):** The highest AD of 4.8239854590 is found with PAM clustering at 6 clusters, reflecting the average distance within clusters.
+
+* **ADM (Average Dissimilarity):** The lowest ADM of 0.0179680671 is achieved with Hierarchical clustering at 3 clusters, showing minimal average dissimilarity within clusters.
+
+* **FOM (Freeman's Measure):** The highest FOM of 0.7178725784 is observed with PAM clustering at 6 clusters, suggesting better clustering performance according to Freeman’s measure.
+
+* **Hierarchical Clustering with 3 Clusters:** Optimal for APN and ADM, indicating compact and well-defined clusters with minimal average path length and dissimilarity.
+
+* **PAM Clustering with 6 Clusters:** Optimal for AD and FOM, reflecting more spread-out clusters and superior overall clustering performance based on Freeman’s Measure.
+
+Hierarchical shows best results in all 4 measures with being consistently high in AD and FOM, while being low in both ADM and APN. 
+
 
 # 6. Conclusion and Recommendation
 
