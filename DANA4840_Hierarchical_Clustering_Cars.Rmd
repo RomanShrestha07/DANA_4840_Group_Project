@@ -35,6 +35,7 @@ head(mtcars)
 
 ### 2.1.1. Checking Data Structure
 ```{r}
+dim(mtcars)
 str(mtcars)
 ```
 We can see that our data comprises 32 observations of different car models and 12 automobile features of mixed data types.

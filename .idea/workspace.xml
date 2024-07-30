@@ -4,8 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="648550f5-50e6-4136-94de-c940c6745bcf" name="Changes" comment="- changed project file structure 2">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="648550f5-50e6-4136-94de-c940c6745bcf" name="Changes" comment="- fixed up hierarchical code">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/DANA4840_Hierarchical_Clustering_Cars.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/DANA4840_Hierarchical_Clustering_Cars.Rmd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/DANA4840_Partitional_Clustering_Cancer.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/DANA4840_Partitional_Clustering_Cancer.Rmd" afterDir="false" />
@@ -86,6 +85,7 @@
     <MESSAGE value="- major code changes&#10;- topics properly structured&#10;- wdbc dataset source change" />
     <MESSAGE value="- changed project file structure" />
     <MESSAGE value="- changed project file structure 2" />
-    <option name="LAST_COMMIT_MESSAGE" value="- changed project file structure 2" />
+    <MESSAGE value="- fixed up hierarchical code" />
+    <option name="LAST_COMMIT_MESSAGE" value="- fixed up hierarchical code" />
   </component>
 </project>
