@@ -6,7 +6,7 @@ output: html_document
 
 # 1. Research Statement on Cars Dataset
 
-The automobile industry continually seeks to understand the characteristics and performance of various car models in order to meet the varied needs of its customers. The given dataset contains numerous characteristics that can be used to categorize cars into different groups, including weight (wt), horsepower (hp), engine displacement (disp), and miles per gallon (mpg).
+The automobile industry continually seeks to understand the characteristics and performance of various car models in order to meet the varied needs of its customers. The given dataset contains numerous characteristics that can be used to categorize cars into different groups, including weight (wt), horsepower (hp), engine displacement (disp), and miles per gallon (mpg). 
 
 The objective of this analysis is to segment the car models into clusters that represent different types of vehicles. This can help in understanding the underlying patterns in the data, such as identifying clusters of high-performance sports cars, fuel-efficient vehicles, or family-oriented models.Additionally, by using this clustering, marketers and producers can more successfully target particular customer categories.
 
@@ -15,9 +15,7 @@ The objective of this analysis is to segment the car models into clusters that r
 
 Before diving into the cluster analysis, let's first thoroughly examine and understand our data. This preliminary step will allow us to identify key patterns and characteristics within the dataset, ensuring a solid foundation for accurate analysis. By doing so, we can address any potential data quality issues and refine our approach for more meaningful results.
 
-## 2.1 Loading the Libraries
-
-```{r}
+```{r message=FALSE, warning=FALSE}
 library("tidyverse")
 library("factoextra")
 library("dendextend")
@@ -26,20 +24,32 @@ library("corrplot")
 library("cluster")
 library("patchwork")
 library("clValid")
+library("gridExtra")
 
 set.seed(101)
 ```
 
-
-## 2.2 Reading the Data
+## 2.1 Reading the Data
 
 ```{r}
 mtcars <- read.csv("data/mtcars.csv", header = T, sep = ",")
 head(mtcars)
 ```
 
+### 2.1.1. Checking Data Structure
 
-## 2.3 Feature Explanation
+```{r}
+str(mtcars)
+```
+
+```{r}
+rownames(mtcars)
+```
+
+We can see that our data is comprised of 32 observations of different car models and 12 automobile features of mixed data types.
+
+
+## 2.2 Feature Explanation
 
 The 'mtcars' dataset includes 12 features as detailed below:
 
@@ -68,18 +78,7 @@ The 'mtcars' dataset includes 12 features as detailed below:
 * 'carb' (categorical-ordinal): Number of carburetor
 
 
-## 2.4 Exploratory Data Analysis
-
-```{r}
-str(mtcars)
-```
-
-```{r}
-rownames(mtcars)
-```
-
-
-## 2.5 Data Pre-processing
+## 2.3 Data Pre-processing
 
 ```{r}
 mtcars_categorical <- data.frame(
@@ -107,442 +106,84 @@ mtcars <- mtcars_joined
 head(mtcars)
 ```
 
-
-# 3. Pre-clustering Assessment
-
-Before performing clustering analysis, it is crucial to conduct a pre-clustering assessment to evaluate the dataset's cluster tendency and determine the optimal clustering approach. Tools like the Hopkins statistic and VAT can help assess whether the data points possess significant clustering tendencies. Once cluster tendency is established, the next step involves finding the optimal number of clusters. This can be achieved using methods such as the Elbow Method, Silhouette Analysis, or the Gap Statistic, each providing insights into the most meaningful way to partition the data.
-
-## 3.1 Assessing Cluster Tendency
-
-```{r}
-fviz_pca_ind(
-  prcomp(mtcars),
-  title = "PCA - mtcars",
-  palette = "jco",
-  geom = "point",
-  ggtheme = theme_classic(),
-  legend = "bottom"
-)
-```
-
-### 3.1.1 Hopkins Statistics
-
-```{r}
-set.seed(25)
-
-hopkins_mtcars <- hopkins(mtcars, m = ceiling(nrow(mtcars) / 10))
-hopkins_mtcars
-```
-
-### 3.1.2 Visual Assessment of Cluster Tendency (VAT)
-
-```{r}
-fviz_dist(
-  dist(mtcars),
-  show_labels = FALSE
-) + labs(title = "mtcar")
-```
-The Hopkins statistic of 0.9999998 indicates a strong clustering tendency in the dataset, suggesting that the data is well-suited for cluster analysis. The VAT plot visually reinforces this, showing distinct blocks of similar values along the diagonal, which corresponds to well-separated clusters.
-
-
-## 3.2 Finding the Optimal Number of Clusters
-
-### 3.2.1 Silhouette Method
-
-```{r}
-mtcars_silhouette_hierarchical <- fviz_nbclust(mtcars, hcut, method = "silhouette")
-mtcars_silhouette_hierarchical
-```
-
-### 3.2.2 Gap Statistics
-
-```{r}
-mtcars_gap_hierarchical <- fviz_nbclust(mtcars, hcut, nstart = 50, method = "gap_stat", nboot = 500)
-mtcars_gap_hierarchical
-```
-
-#### The Gap Statistic graph indicates that the optimal number of clusters is k=2, his conclusion is drawn from observing the most significant change in the Gap Statistic value at this point.
-
-# 4. Clustering Analysis
-
-## 4.1 Agglomerative Hierarchical Clustering
-
-### 4.1.1  Single Linkage Method
-
-```{r}
-res.dist <- dist(mtcars, method = "manhattan")
-hc_single <- hclust(d = res.dist, method = "single")
-
-single_dendrogram <- fviz_dend(
-  hc_single,
-  cex = 0.5, # Increase the label size
-  k = 2, # Number of clusters
-  k_colors = "jco", # Color palette for clusters
-  rect = TRUE,
-  rect_border = "jco", # Add rectangle around clusters
-  rect_fill = TRUE, # Fill the rectangle
-  label_cols = "black", # Color of labels
-  label_cex = 0.5, # Font size of labels
-  main = "Single Linkage Dendrogram"
-) + theme_minimal()
-
-single_dendrogram
-```
-
-
-
-```{r}
-cor(res.dist, cophenetic(hc_single))
-```
-
-#### This suggests that the cophenetic distances are fairly consistent with the original pairwise distances in the distance matrix.
-
-### 4.1.2 Complete Linkage Method
-```{r}
-hc_complete <- hclust(d = res.dist, method = "complete")
-
-complete_dendrogram <- fviz_dend(
-  hc_complete,
-  cex = 0.5,
-  k = 2,
-  k_colors = "jco",
-  rect = TRUE,
-  rect_border = "jco",
-  rect_fill = TRUE,
-  label_cols = "black",
-  label_cex = 0.5,
-  main = "Complete Linkage Dendrogram"
-) + theme_minimal()
-```
-
-```{r}
-cor(res.dist, cophenetic(hc_complete))
-```
-
-#### The high correlation coefficient of 0.7859 demonstrates that the complete-linkage method effectively preserves the original distance relationships between data points. This validates the robustness of the clustering results and confirms that the complete-linkage method is a reliable approach for maintaining the data's spatial relationships.
-
-### 4.1.3 Average Linkage Method
-```{r}
-hc_average <- hclust(d = res.dist, method = "average")
-
-average_dendrogram <- fviz_dend(
-  hc_average,
-  cex = 0.5,
-  k = 2,
-  k_colors = "jco",
-  rect = TRUE,
-  rect_border = "jco",
-  rect_fill = TRUE,
-  label_cols = "black",
-  label_cex = 0.5,
-  main = "Average Linkage Dendrogram"
-) + theme_minimal()
-
-average_dendrogram
-```
-
-
-```{r}
-cor(res.dist, cophenetic(hc_average))
-```
-
-#### The high correlation coefficient of 0.8011 demonstrates that the average-linkage hierarchical clustering method effectively maintains the original distance relationships between data points.
-
-### 4.1.4 Ward Linkage Method
-
-```{r}
-hc_ward_d <- hclust(d = res.dist, method = "ward.D")
-
-ward_d_dendrogram <- fviz_dend(
-  hc_ward_d,
-  cex = 0.5,
-  k = 2,
-  k_colors = "jco",
-  rect = TRUE,
-  rect_border = "jco",
-  rect_fill = TRUE,
-  label_cols = "black",
-  label_cex = 0.5,
-  main = "Ward D Linkage Dendrogram"
-) + theme_minimal()
-ward_d_dendrogram
-```
-
-
-```{r}
-cor(res.dist, cophenetic(hc_ward_d))
-```
-#### The high correlation coefficient of 0.7494 demonstrates that Ward's hierarchical clustering method maintains a strong consistency with the original distance relationships between data points.
-
-### 4.1.5 Ward.D2 Method
-
-```{r}
-hc_ward_d2 <- hclust(d = res.dist, method = "ward.D2")
-
-ward_d2_dendrogram <- fviz_dend(
-  hc_ward_d2,
-  cex = 0.5,
-  k = 2,
-  k_colors = "jco",
-  rect = TRUE,
-  rect_border = "jco",
-  rect_fill = TRUE,
-  label_cols = "black",
-  label_cex = 0.5,
-  main = "Ward D2 Linkage Dendrogram"
-) + theme_minimal()
-
-ward_d2_dendrogram
-```
-
-```{r}
-cor(res.dist, cophenetic(hc_ward_d2))
-```
-
-#### The high correlation coefficient of 0.7667039 demonstrates that Ward's hierarchical clustering method maintains a strong consistency with the original distance relationships between data points.
-
-## 4.2 Comparing Dendograms
-
-```{r}
-dend_complete <- mtcars %>%
-  dist %>%
-  hclust("complete") %>%
-  as.dendrogram
-dend_single <- mtcars %>%
-  dist %>%
-  hclust("single") %>%
-  as.dendrogram
-dend_average <- mtcars %>%
-  dist %>%
-  hclust("average") %>%
-  as.dendrogram
-dend_centroid <- mtcars %>%
-  dist %>%
-  hclust("centroid") %>%
-  as.dendrogram
-dend_ward <- mtcars %>%
-  dist %>%
-  hclust("ward.D") %>%
-  as.dendrogram
-dend_ward2 <- mtcars %>%
-  dist %>%
-  hclust("ward.D2") %>%
-  as.dendrogram
-```
-
-
-```{r}
-dend_list <- dendlist(
-  "Complete" = dend_complete,
-  "Single" = dend_single,
-  "Average" = dend_average,
-  "Centroid" = dend_centroid,
-  "WardD" = dend_ward,
-  "WardD2" = dend_ward2
-)
-
-cors <- cor.dendlist(dend_list)
-
-round(cors, 2)
-```
-
-```{r}
-corrplot(cors, "pie", "lower")
-```
-
-#### The Single and Average methods, as well as the two Ward methods (WardD and WardD2), exhibit very high correlations, indicating that these methods produce very similar clustering results.
-#### The Complete and Centroid methods show lower correlations with other methods, particularly with WardD, reflecting more distinct clustering structures compared to the others.
-
-# 5. Cluster Validation
-
-## 5.1 Internal Validation
-```{r}
-intern_mtcars <- clValid(mtcars, 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "internal")
-
-summary(intern_mtcars)
-```
-
-#### The hierarchical clustering method with 2 clusters achieves the lowest connectivity score, indicating that it produces the most compact clusters among the methods and configurations tested.
-#### The hierarchical clustering method with 6 clusters achieves the highest Dunn Index score, suggesting that this configuration provides the best separation between clusters relative to their size.
-#### The PAM method with 2 clusters achieves the highest silhouette width, indicating that this configuration results in the most well-defined and cohesive clusters.
-
-```{r}
-par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
-
-plot(intern_mtcars, legend = FALSE)
-
-plot(nClusters(intern_mtcars), measures(intern_mtcars, "Dunn")[, , 1], type = "n", axes = FALSE, xlab = "", ylab = "")
-legend("center", clusterMethods(intern_mtcars), col = 1:9, lty = 1:9, pch = paste(1:9))
-```
-
-#### Connectivity: The hierarchical method gives the lowest connectivity score at k=2, as well as having consistently lowest scores
-#### K-means: The hierarchical method gives the highest value for dunn index at k=6, and is also consistently highest as well
-#### Silhoutte: PAM and kmeans seem to have tied for highest silhoutte score at k=2, but kmeans overall has higher scores consistently
-
-## 5.2 Stability Validation
-
-```{r}
-stab_mtcars <- clValid(mtcars, 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "stability")
-
-optimal_scores_stab_mtcars <- optimalScores(stab_mtcars)
-optimal_scores_stab_mtcars
-```
-
-#### APN: K-means clustering with 2 clusters achieves the lowest APN score, indicating that this configuration provides the most efficient pairwise distances within clusters, minimizing the average distance between neighbors.
-#### AD: PAM clustering with 6 clusters yields the highest AD score, reflecting the average distance within clusters. This suggests that with 6 clusters, the average intra-cluster distance is relatively high, which may indicate that the clusters are more dispersed or less compact.
-#### ADM: K-means clustering with 2 clusters provides the lowest ADM score, implying the smallest average distance in the distance matrix, suggesting a good clustering result where distances are well managed.
-#### FOM: Hierarchical clustering with 6 clusters achieves the highest FOM score. The Fowlkes-Mallows Index evaluates the similarity between the clusters and the true classifications (if available). A higher FOM score indicates better clustering quality, with 6 clusters being particularly effective in capturing the true structure of the data.
-
-```{r}
-op <- par(no.readonly = TRUE)
-par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
-
-plot(stab_mtcars, measure = c("APN", "AD", "ADM", "FOM"), legend = F)
-
-plot(nClusters(stab_mtcars), measures(stab_mtcars, "APN")[, , 1], type = "n", axes = F, xlab = "", ylab = "")
-legend("center", clusterMethods(stab_mtcars), col = 1:9, lty = 1:9, pch = paste(1:9))
-
-par(op)
-```
-
-#### APN: The highest value is k-means at k=3
-#### AD: It seems like all 3(hierarchical, PAM, and k-means) are lowest at the same point k=6. PAM is slightly lower than the other 2 methods overall.
-#### ADM: The highest value is k-means at k-3. Similar to APN
-#### FOM: Hierarchical and k-means methods are the lowest at k=6. k-means seems to have lower values overall though, so it may be better
-
-
-=======
----
-title: "DANA4840 Project - Hierarchical Clustering"
-author: "M.Gadimova, A.Mukherjee, R.Shrestha, P.Tating"
-date: "`r Sys.Date()`"
-output:
-pdf_document: default
-html_document: default
----
-
-# 1. Research Statement on Cars Dataset
-
-The automobile industry continually seeks to understand the characteristics and performance of various car models in order to meet the varied needs of its customers. The given dataset contains numerous characteristics that can be used to categorize cars into different groups, including weight (wt), horsepower (hp), engine displacement (disp), and miles per gallon (mpg).
-
-The objective of this analysis is to segment the car models into clusters that represent different types of vehicles. This can help in understanding the underlying patterns in the data, such as identifying clusters of high-performance sports cars, fuel-efficient vehicles, or family-oriented models.Additionally, by using this clustering, marketers and producers can more successfully target particular customer categories.
-
-
-# 2. Preliminaries
-
-Before diving into the cluster analysis, let's first thoroughly examine and understand our data. This preliminary step will allow us to identify key patterns and characteristics within the dataset, ensuring a solid foundation for accurate analysis. By doing so, we can address any potential data quality issues and refine our approach for more meaningful results.
-
-## 2.1 Loading the Libraries
-
-```{r}
-library("tidyverse")
-library("factoextra")
-library("dendextend")
-library("hopkins")
-library("corrplot")
-library("cluster")
-library("patchwork")
-library("clValid")
-
-set.seed(101)
-```
-
-
-## 2.2 Reading the Data
-
-```{r}
-mtcars <- read.csv("data/mtcars.csv", header = T, sep = ",")
-head(mtcars)
-```
-
-
-## 2.3 Feature Explanation
-
-The 'mtcars' dataset includes 12 features as detailed below:
-
-* 'model' (categorical): Model of the vehicle
-
-* 'mpg' (numerical): Miles/(US) gallon, a measure of fuel efficiency
-
-* 'cyl' (categorical-ordinal): Number of cylinders in the engine
-
-* 'disp' (numerical): Displacement in cubic inches
-
-* 'hp' (numerical): Gross horsepower
-
-* 'drat' (numerical): Rear axle ratio
-
-* 'wt' (numerical): Weight of the car (1000 lbs)
-
-* 'qsec' (numerical): 1/4 mile time, a measure of acceleration
-
-* 'vs' (binary): Engine type (0 = V-shaped, 1 = straight)
-
-* 'am' (binary): Transmission type (0 = automatic, 1 = manual)
-
-* 'gear' (categorical-ordinal): Number of forward gears
-
-* 'carb' (categorical-ordinal): Number of carburetor
+Our numerical features have different scale of measurements so we standardized the data to ensure each variable contributes equally to the distance calculations, preventing variables with larger scales to have more weight in the clustering results.
 
 
 ## 2.4 Exploratory Data Analysis
 
-```{r}
-str(mtcars)
-```
+### 2.4.1. Checking Missing Values
 
 ```{r}
-rownames(mtcars)
+missing_mtcars <- sapply(mtcars, function(x) sum(is.na(x)))
+missing_mtcars
 ```
 
-
-## 2.5 Data Pre-processing
+### 2.4.2. Boxplots for Different Features
 
 ```{r}
-mtcars_categorical <- data.frame(
-  cyl = mtcars$cyl,
-  vs = mtcars$vs,
-  am = mtcars$am,
-  gear = mtcars$gear,
-  carb = mtcars$carb
-)
-
-mtcars_numerical <- data.frame(
-  mpg = mtcars$mpg,
-  disp = mtcars$disp,
-  hp = mtcars$hp,
-  drat = mtcars$drat,
-  wt = mtcars$wt,
-  qsec = mtcars$qsec
-)
-
-mtcars_numerical_scaled <- data.frame(scale(mtcars_numerical))
-
-mtcars_joined <- cbind(mtcars_numerical_scaled, mtcars_categorical)
-rownames(mtcars_joined) <- mtcars$model
-mtcars <- mtcars_joined
-head(mtcars)
+color_palette <- c("#4494a4", "#7ca454", "#f9d448", "#9fc4b7", "#fcea9e", "#a6ccd4")
+boxplot(scale(mtcars_numerical), horizontal = T, col = color_palette)
 ```
+
+The graph presents standardized boxplots for several numerical variables, facilitating a comparative analysis of their distributions. The variables 'qsec', 'hp', and 'disp' exhibit lower medians and narrower ranges compared to 'wt', 'drat', and 'mpg'. 
+
+Notably, the variables 'qsec', 'hp', and 'wt' have outliers on the positive side, indicating some data points that are significantly higher than the majority of the data for these variables. 
+
+
+### 2.4.3. Bar Plot for Categorical Variables
+
+```{r}
+plot_cyl <- ggplot(mtcars_categorical, aes(x = factor(cyl), fill = factor(cyl))) +
+  geom_bar() +
+  scale_fill_manual(values = color_palette) +
+  theme_classic() +
+  ggtitle("Cylinders")
+
+plot_vs <- ggplot(mtcars_categorical, aes(x = factor(vs), fill = factor(vs))) +
+  geom_bar() +
+  scale_fill_manual(values = color_palette) +
+  theme_classic() +
+  ggtitle("Engine Shape (vs)")
+
+plot_am <- ggplot(mtcars_categorical, aes(x = factor(am), fill = factor(am))) +
+  geom_bar() +
+  scale_fill_manual(values = color_palette) +
+  theme_classic() +
+  ggtitle("Transmission (am)")
+
+plot_gear <- ggplot(mtcars_categorical, aes(x = factor(gear), fill = factor(gear))) +
+  geom_bar() +
+  scale_fill_manual(values = color_palette) +
+  theme_classic() +
+  ggtitle("Gears")
+
+plot_carb <- ggplot(mtcars_categorical, aes(x = factor(carb), fill = factor(carb))) +
+  geom_bar() +
+  scale_fill_manual(values = color_palette) +
+  theme_classic() +
+  ggtitle("Carburetors")
+
+grid.arrange(plot_cyl, plot_vs, plot_am, plot_gear, plot_carb, ncol = 3)
+```
+
+* **Cylinders (cyl):** Cars with 8 cylinders are the most common, followed by those with 4 and 6 cylinders.
+
+* **Engine Shape (vs):** This plot categorizes cars based on engine shape, where 0 represent a V-shaped engine and 1 a straight engine. More cars have the V-shaped type of engine shape compared to the straight type.
+
+* **Transmission (am):** This plot indicates the type of transmission, with 0 representing automatic and 1 manual. There are more cars with the automatic type of transmission than the manual type.
+
+* **Gears (gear):** This plot shows the count of cars based on the number of gears. Cars with 3 gears are the most prevalent, followed by those with 4 and 5 gears.
+
+* **Carburetors (carb):** Cars with 2 carburetors are the most common, followed by those with 4 and 1. There are fewer cars with 6 and 8 carburetors.
 
 
 # 3. Pre-clustering Assessment
 
-Before performing clustering analysis, it is crucial to conduct a pre-clustering assessment to evaluate the dataset's cluster tendency and determine the optimal clustering approach. Tools like the Hopkins statistic and VAT can help assess whether the data points possess significant clustering tendencies. Once cluster tendency is established, the next step involves finding the optimal number of clusters. This can be achieved using methods such as the Elbow Method, Silhouette Analysis, or the Gap Statistic, each providing insights into the most meaningful way to partition the data.
+Before performing clustering analysis, it is crucial to conduct a pre-clustering assessment to evaluate the dataset's cluster tendency and determine the optimal clustering approach. Tools like the Hopkins statistic and VAT can help assess whether the data points possess significant clustering tendencies. Once cluster tendency is established, the next step involves finding the optimal number of clusters. This can be achieved using methods such as the Elbow Method, Silhouette Analysis, or the Gap Statistic, each providing insights into the most meaningful way to partition the data. 
 
-## 3.1 Assessing Cluster Tendency
+## 3.1. Assessing Cluster Tendency
 
-```{r}
-fviz_pca_ind(
-  prcomp(mtcars),
-  title = "PCA - mtcars",
-  palette = "jco",
-  geom = "point",
-  ggtheme = theme_classic(),
-  legend = "bottom"
-)
-```
-
-### 3.1.1 Hopkins Statistics
+### 3.1.1. Hopkins Statistics
 
 ```{r}
 set.seed(25)
@@ -550,7 +191,7 @@ set.seed(25)
 hopkins_mtcars <- hopkins(mtcars, m = ceiling(nrow(mtcars) / 10))
 hopkins_mtcars
 ```
-### 3.1.2 Visual Assessment of Cluster Tendency (VAT)
+### 3.1.2. Visual Assessment of Cluster Tendency (VAT)
 
 ```{r}
 fviz_dist(
@@ -561,22 +202,23 @@ fviz_dist(
 The Hopkins statistic of 0.9999998 indicates a strong clustering tendency in the dataset, suggesting that the data is well-suited for cluster analysis. The VAT plot visually reinforces this, showing distinct blocks of similar values along the diagonal, which corresponds to well-separated clusters.
 
 
-## 3.2 Finding the Optimal Number of Clusters
+## 3.2. Finding the Optimal Number of Clusters
 
-### 3.2.1 Silhouette Method
+### 3.2.1. Silhouette Method
 
 ```{r}
 mtcars_silhouette_hierarchical <- fviz_nbclust(wdbc, hcut, method = "silhouette")
 mtcars_silhouette_hierarchical
 ```
 
-### 3.2.2 Gap Statistics
+### 3.2.2. Gap Statistics
 
 ```{r}
 mtcars_gap_hierarchical <- fviz_nbclust(mtcars, hcut, nstart = 50, method = "gap_stat", nboot = 500)
 mtcars_gap_hierarchical
 ```
 
+The Gap Statistic graph indicates that the optimal number of clusters is k=2. This conclusion is drawn from observing the most significant change in the Gap Statistic value at this point.
 
 # 4. Clustering Analysis
 
@@ -606,6 +248,8 @@ single_dendrogram <- fviz_dend(
 cor(res.dist, cophenetic(hc_single))
 ```
 
+This suggests that the cophenetic distances are fairly consistent with the original pairwise distances in the distance matrix.
+
 ### 4.1.2 Complete Linkage Method
 ```{r}
 hc_complete <- hclust(d = res.dist, method = "complete")
@@ -628,6 +272,8 @@ complete_dendrogram <- fviz_dend(
 cor(res.dist, cophenetic(hc_complete))
 ```
 
+The high correlation coefficient of 0.7859 demonstrates that the complete-linkage method effectively preserves the original distance relationships between data points. This validates the robustness of the clustering results and confirms that the complete-linkage method is a reliable approach for maintaining the data's spatial relationships.
+
 ### 4.1.3 Average Linkage Method
 ```{r}
 hc_average <- hclust(d = res.dist, method = "average")
@@ -646,10 +292,11 @@ average_dendrogram <- fviz_dend(
 ) + theme_minimal()
 ```
 
-
 ```{r}
 cor(res.dist, cophenetic(hc_average))
 ```
+
+The high correlation coefficient of 0.8011 demonstrates that the average-linkage hierarchical clustering method effectively maintains the original distance relationships between data points.
 
 ### 4.1.4 Ward Linkage Method
 
@@ -670,10 +317,11 @@ ward_d_dendrogram <- fviz_dend(
 ) + theme_minimal()
 ```
 
-
 ```{r}
 cor(res.dist, cophenetic(hc_ward_d))
 ```
+
+The high correlation coefficient of 0.7494 demonstrates that Ward's hierarchical clustering method maintains a strong consistency with the original distance relationships between data points. 
 
 ### 4.1.5 Ward.D2 Method
 
@@ -697,6 +345,9 @@ ward_d2_dendrogram <- fviz_dend(
 ```{r}
 cor(res.dist, cophenetic(hc_ward_d2))
 ```
+
+The high correlation coefficient of 0.7667039 demonstrates that Ward's hierarchical clustering method maintains a strong consistency with the original distance relationships between data points. 
+
 
 ## 4.2 Comparing Dendograms
 
@@ -744,8 +395,12 @@ round(cors, 2)
 ```
 
 ```{r}
-corrplot(cors, "pie", "lower")
+corrplot(cors, method = "pie", type = "lower", col = color_palette, tl.col = "black")
 ```
+* The Single and Average methods, as well as the two Ward methods (WardD and WardD2), exhibit very high correlations, indicating that these methods produce very similar clustering results.
+
+* The Complete and Centroid methods show lower correlations with other methods, particularly with WardD, reflecting more distinct clustering structures compared to the others.
+
 
 # 5. Cluster Validation
 
@@ -756,6 +411,12 @@ intern_mtcars <- clValid(mtcars, 2:6, clMethods = c("hierarchical", "kmeans", "p
 summary(intern_mtcars)
 ```
 
+* The hierarchical clustering method with 2 clusters achieves the lowest connectivity score, indicating that it produces the most compact clusters among the methods and configurations tested.
+
+* The hierarchical clustering method with 6 clusters achieves the highest Dunn Index score, suggesting that this configuration provides the best separation between clusters relative to their size.
+
+* The PAM method with 2 clusters achieves the highest silhouette width, indicating that this configuration results in the most well-defined and cohesive clusters.
+
 ```{r}
 par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
 
@@ -764,6 +425,13 @@ plot(intern_mtcars, legend = FALSE)
 plot(nClusters(intern_mtcars), measures(intern_mtcars, "Dunn")[, , 1], type = "n", axes = FALSE, xlab = "", ylab = "")
 legend("center", clusterMethods(intern_mtcars), col = 1:9, lty = 1:9, pch = paste(1:9))
 ```
+
+* Connectivity: The hierarchical method gives the lowest connectivity score at k=2, as well as having consistently lowest scores.
+
+* K-means: The hierarchical method gives the highest value for Dunn Index at k=6, and is also consistently highest as well.
+
+* Silhouette: PAM and k-means seem to have tied for highest silhouette score at k=2, but k-means overall has higher scores consistently.
+
 
 ## 5.2 Stability Validation
 
@@ -774,8 +442,14 @@ optimal_scores_stab_mtcars <- optimalScores(stab_mtcars)
 optimal_scores_stab_mtcars
 ```
 
+* **APN (Average Path Length):** K-means clustering with 2 clusters achieves the lowest APN score, indicating that this configuration provides the most efficient pairwise distances within clusters, minimizing the average distance between neighbors.
+* **AD (Average Distance):** PAM clustering with 6 clusters yields the highest AD score, reflecting the average distance within clusters. This suggests that with 6 clusters, the average intra-cluster distance is relatively high, which may indicate that the clusters are more dispersed or less compact.
+
+* **ADM (Average Dissimilarity):** K-means clustering with 2 clusters provides the lowest ADM score, implying the smallest average distance in the distance matrix, suggesting a good clustering result where distances are well managed.
+
+* **FOM (Freeman's Measure):** Hierarchical clustering with 6 clusters achieves the highest FOM score. The Fowlkes-Mallows Index evaluates the similarity between the clusters and the true classifications (if available). A higher FOM score indicates better clustering quality, with 6 clusters being particularly effective in capturing the true structure of the data.
+
 ```{r}
-op <- par(no.readonly = TRUE)
 par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
 
 plot(stab_mtcars, measure = c("APN", "AD", "ADM", "FOM"), legend = F)
@@ -785,5 +459,13 @@ legend("center", clusterMethods(stab_mtcars), col = 1:9, lty = 1:9, pch = paste(
 
 par(op)
 ```
+
+* APN: The highest value is k-means at k=3.
+
+* AD: It seems like all 3 (hierarchical, PAM, and k-means) are lowest at the same point k=6. PAM is slightly lower than the other 2 methods overall.
+
+* ADM: The highest value is k-means at k-3, similar to APN.
+
+* FOM: Hierarchical and k-means methods are the lowest at k=6. K-means seems to have lower values overall though, so it may be better.
 
 # 6. Conclusion and Recommendation
