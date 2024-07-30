@@ -4,37 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="648550f5-50e6-4136-94de-c940c6745bcf" name="Changes" comment="- fixed up kmeans/pam code">
-      <change afterPath="$PROJECT_DIR$/data/wdbc.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/images/Rplot01.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/images/average_linkage.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/images/centroid_linkage.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/images/cluster_plot.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/images/complete_linkage.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/images/cophenetic.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/images/int-validation-mtcars.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/images/piecharts.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/images/single_link.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/images/stab_val_mtcars.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/images/ward_d2_linkage.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/images/ward_d_linkage.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Dataset_Maryam/test.Rmd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Rplot01.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/average_linkage.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/centroid_linkage.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cluster_plot.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/complete_linkage.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cophenetic.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/wdbc.data" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/wdbc_kaggle.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/int-validation-mtcars.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/piecharts.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/single_link.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/stab_val_mtcars.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ward_d2_linkage.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ward_d_linkage.png" beforeDir="false" />
+    <list default="true" id="648550f5-50e6-4136-94de-c940c6745bcf" name="Changes" comment="- Updated README.md&#10;- project file structure fix">
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -114,6 +85,7 @@
     <MESSAGE value="- changed project file structure 2" />
     <MESSAGE value="- fixed up hierarchical code" />
     <MESSAGE value="- fixed up kmeans/pam code" />
-    <option name="LAST_COMMIT_MESSAGE" value="- fixed up kmeans/pam code" />
+    <MESSAGE value="- Updated README.md&#10;- project file structure fix" />
+    <option name="LAST_COMMIT_MESSAGE" value="- Updated README.md&#10;- project file structure fix" />
   </component>
 </project>

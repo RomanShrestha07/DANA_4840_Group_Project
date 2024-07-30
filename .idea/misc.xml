@@ -34,6 +34,13 @@
             </RMarkdownRenderProfile>
           </value>
         </entry>
+        <entry key="file://$PROJECT_DIR$/DANA4840_Hierarchical-Clustering_Cars-Dataset_updated.Rmd">
+          <value>
+            <RMarkdownRenderProfile>
+              <option name="outputDirectoryUrl" value="file://$PROJECT_DIR$" />
+            </RMarkdownRenderProfile>
+          </value>
+        </entry>
         <entry key="file://$PROJECT_DIR$/DANA4840_Hierarchical_Clustering_Cars.Rmd">
           <value>
             <RMarkdownRenderProfile>
@@ -42,6 +49,13 @@
           </value>
         </entry>
         <entry key="file://$PROJECT_DIR$/DANA4840_Partitional-Clustering_Breast-Cancer-Dataset.Rmd">
+          <value>
+            <RMarkdownRenderProfile>
+              <option name="outputDirectoryUrl" value="file://$PROJECT_DIR$" />
+            </RMarkdownRenderProfile>
+          </value>
+        </entry>
+        <entry key="file://$PROJECT_DIR$/DANA4840_Partitional-Clustering_Breast-Cancer-Dataset_Updated.Rmd">
           <value>
             <RMarkdownRenderProfile>
               <option name="outputDirectoryUrl" value="file://$PROJECT_DIR$" />
