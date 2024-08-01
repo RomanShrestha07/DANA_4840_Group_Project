@@ -20,6 +20,13 @@
             </RMarkdownRenderProfile>
           </value>
         </entry>
+        <entry key="file://$PROJECT_DIR$/DANA 4840 Research 1.Rmd">
+          <value>
+            <RMarkdownRenderProfile>
+              <option name="outputDirectoryUrl" value="file://$PROJECT_DIR$" />
+            </RMarkdownRenderProfile>
+          </value>
+        </entry>
         <entry key="file://$PROJECT_DIR$/DANA4840_Hierarchical-Clustering_Cars-Dataset.Rmd">
           <value>
             <RMarkdownRenderProfile>

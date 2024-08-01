@@ -1,0 +1,205 @@
+---
+title: "DANA 4840 Research Question 1"
+author: "Roman"
+output: html_document
+---
+
+What is the role of dimensionality reduction techniques such as Principal Component Analysis (PCA), Independent Component Analysis (ICA), t-Distributed Stochastic Neighbor Embedding (t-SNE) or Uniform Manifold Approximation and Projection (UMAP) in enhancing clustering performance?
+
+## Loading the libraries
+```{r loading_libraries, message = FALSE}
+library("ggplot2")
+library("factoextra")
+library("dendextend")
+library("hopkins")
+library("corrplot")
+library("cluster")
+library("patchwork")
+library("clValid")
+library("EMCluster")
+library("fastICA")
+library("Rtsne")
+library("umap")
+```
+
+## Loading the Dataset
+```{r}
+wdbc <- read.csv("./data/wdbc.csv", header = T, sep = ",")
+head(wdbc)
+```
+
+## Checking the internal structure
+```{r}
+dim(wdbc)
+str(wdbc)
+```
+
+## Pre-processing and Normalizing
+```{r}
+color_palette <- rainbow(10)
+diagnosis <- wdbc$diagnosis
+encoded_diagnosis <- ifelse(diagnosis == "M", 1, 2)
+
+wdbc_numerical <- wdbc[, -c(1, 2)]
+
+wdbc_scaled <- data.frame(scale(wdbc_numerical))
+rownames(wdbc_scaled) <- wdbc$ID
+wdbc <- wdbc_scaled
+head(wdbc)
+```
+
+## Assessing Clustering Tendency
+
+## Hopkins Statistic
+```{r}
+set.seed(69)
+
+hopkins_wdbc <- hopkins(wdbc, m = ceiling(nrow(wdbc) / 10))
+hopkins_wdbc
+```
+
+## K-Means Graph
+```{r}
+get_kmeans_plot <- function(km.res, data, name) {
+  p <- fviz_cluster(
+    km.res,
+    data = data,
+    palette = color_palette,
+    ellipse.type = "convex",
+    star.plot = TRUE,
+    ellipse = TRUE,
+    geom = "point",
+    main = paste0(name, " K-Means Cluster Plot"),
+    ggtheme = theme_minimal()
+  )
+
+  return(p)
+}
+```
+
+## Base
+```{r}
+set.seed(101)
+
+km.res <- kmeans(wdbc, 2, nstart = 100)
+
+get_kmeans_plot(km.res, wdbc, "Base")
+RRand(encoded_diagnosis, km.res$cluster)
+```
+
+## PCA
+```{r}
+set.seed(101)
+
+pca_wdbc <- prcomp(wdbc)
+pca_index <- which(cumsum(summary(pca_wdbc)$importance[2,]) >= 0.8)[1]
+
+pca_data <- data.frame(pca_wdbc$x)
+pca_data_no <- pca_data[, 1:pca_index]
+
+pca_km.res <- kmeans(pca_data_no, 2, nstart = 100)
+
+get_kmeans_plot(pca_km.res, pca_data_no, "PCA")
+RRand(encoded_diagnosis, pca_km.res$cluster)
+```
+
+## ICA
+```{r}
+set.seed(101)
+
+n_components <- 2
+ica_result <- fastICA(wdbc, n.comp = n_components)
+
+ica_data <- data.frame(ica_result$S)
+colnames(ica_data) <- paste0("IC", 1:n_components)
+
+ica_km.res <- kmeans(ica_data, 2, nstart = 100)
+
+get_kmeans_plot(ica_km.res, ica_data, "ICA")
+RRand(encoded_diagnosis, ica_km.res$cluster)
+```
+
+## t-SNE
+```{r}
+set.seed(101)
+
+tsne_result <- Rtsne(wdbc, dims = 3, perplexity = 30)
+tsne_data <- as.data.frame(tsne_result$Y)
+
+tsne_km.res <- kmeans(tsne_data, 2, nstart = 100)
+
+get_kmeans_plot(tsne_km.res, tsne_data, "t-SNE")
+RRand(encoded_diagnosis, tsne_km.res$cluster)
+```
+
+## UMAP
+```{r}
+set.seed(101)
+
+umap_result <- umap(wdbc)
+umap_data <- as.data.frame(umap_result$layout)
+
+umap_km.res <- kmeans(umap_data, 2, nstart = 100)
+
+get_kmeans_plot(umap_km.res, umap_data, "UMAP")
+RRand(encoded_diagnosis, umap_km.res$cluster)
+```
+
+## LDA
+```{r}
+lda_model <- lda(diagnosis ~ ., data = wdbc)
+lda_values <- predict(lda_model)
+
+lda_data <- data.frame(lda_values$x)
+lda_data$diagnosis <- diagnosis
+
+ggplot(lda_data, aes(x = LD1, y = 0, color = diagnosis)) +
+  geom_point(size = 3) +
+  labs(
+    title = "LDA: Iris Data Projected onto the First Linear Discriminant",
+    x = "Linear Discriminant 1",
+    y = ""
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.title.y = element_blank()
+  )
+```
+
+## Internal Validation
+```{r}
+intern_wdbc <- clValid(pca_data_no, 2:6, clMethods = c("kmeans", "pam"), validation = "internal")
+
+summary(intern_wdbc)
+```
+
+```{r}
+op <- par(no.readonly = TRUE)
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+
+plot(intern_wdbc, legend = FALSE)
+
+plot(nClusters(intern_wdbc), measures(intern_wdbc, "Dunn")[, , 1], type = "n", axes = FALSE, xlab = "", ylab = "")
+legend("center", clusterMethods(intern_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
+
+par(op)
+```
+
+## Stability Validation
+```{r}
+stab_wdbc <- clValid(pca_data_no, nClust = 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "stability")
+
+optimal_scores_stab <- optimalScores(stab_wdbc)
+optimal_scores_stab
+```
+
+```{r}
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+
+plot(stab_wdbc, measure = c("APN", "AD", "ADM", "FOM"), legend = FALSE)
+
+plot(nClusters(stab_wdbc), measures(stab_wdbc, "APN")[, , 1], type = "n", axes = FALSE, xlab = "", ylab = "")
+legend("left", clusterMethods(stab_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
+```
