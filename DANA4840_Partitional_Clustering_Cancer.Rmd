@@ -2,8 +2,8 @@
 title: "DANA 4840 Project - Partition Clustering"
 author: "Aryan Mukherjee, Maryam Gadimova, Patricia Tating, Roman Shrestha"
 output:
-  pdf_document: default
-  html_document: default
+pdf_document: default
+html_document: default
 ---
 
 # 1. Research Statement on Breast Cancer Dataset
@@ -163,18 +163,18 @@ pie(diagnosis_rel_freq,
 ```
 Benign cancer makes up approximately 62.9% of the dataset, while Malignant cancer constitutes about 37.1%. Benign cancer cases are approximately 1.69 times more prevalent than Malignant cancer cases in the dataset.
 
-### 2.3.4. Correlation Heatmap 
+### 2.3.4. Correlation Heatmap
 ```{r}
 library(corrplot)
 wdbc_numerical <- wdbc[, -c(1, 2)]
 cor_matrix <- cor(wdbc_numerical, use = "complete.obs")
 
-corrplot(cor_matrix, 
+corrplot(cor_matrix,
          method = "color",
          type = "upper",
-         col = colorRampPalette(c("white","lightgrey", "grey", "#4494a4"))(200), 
-         tl.col = "black",  
-         tl.srt = 45,       
+         col = colorRampPalette(c("white", "lightgrey", "grey", "#4494a4"))(200),
+         tl.col = "black",
+         tl.srt = 45,
          tl.cex = 0.5)
 ```
 We can clearly see that there exists multicollinearity between features in the dataset.
@@ -236,7 +236,7 @@ Based on the visual assessment and the Hopkins statistic of 0.9999997, the breas
 
 ### 3.2.1. Elbow Method
 ```{r}
-wdbc_elbow_kmeans <- fviz_nbclust(wdbc, kmeans, method = "wss") + 
+wdbc_elbow_kmeans <- fviz_nbclust(wdbc, kmeans, method = "wss") +
   geom_vline(xintercept = 2, linetype = 2)
 wdbc_elbow_kmeans
 ```
@@ -244,10 +244,10 @@ wdbc_elbow_kmeans
 
 ### 3.2.2. Silhouette Method
 ```{r}
-wdbc_silhouette_kmeans <- fviz_nbclust(wdbc, kmeans, method = "silhouette") + 
+wdbc_silhouette_kmeans <- fviz_nbclust(wdbc, kmeans, method = "silhouette") +
   labs(title = "K-means Silhouette Method")
 
-wdbc_silhouette_pam <- fviz_nbclust(wdbc, pam, method = "silhouette") + 
+wdbc_silhouette_pam <- fviz_nbclust(wdbc, pam, method = "silhouette") +
   labs(title = "PAM Silhouette Method")
 
 wdbc_silhouette_kmeans +
@@ -282,7 +282,7 @@ get_cluster_diff <- function(gap_stat, max_k = 10) {
 max_k <- 10
 gap_stat <- clusGap(wdbc, kmeans, K.max = max_k, B = 500)
 gap_diff_list <- get_cluster_diff(gap_stat, max_k)
-pos_neg_df <- data.frame(cluster = factor(seq_along(gap_diff_list)), 
+pos_neg_df <- data.frame(cluster = factor(seq_along(gap_diff_list)),
                          gap_diff = gap_diff_list)
 
 kmeans_gap <- ggplot(data = pos_neg_df, aes(x = cluster, y = gap_diff)) +
@@ -299,7 +299,7 @@ Below, we calculate the gap statistics for the PAM clustering of the breast canc
 max_k <- 10
 gap_stat <- clusGap(wdbc, pam, K.max = max_k, B = 500)
 gap_diff_list <- get_cluster_diff(gap_stat, max_k)
-pos_neg_df <- data.frame(cluster = factor(seq_along(gap_diff_list)), 
+pos_neg_df <- data.frame(cluster = factor(seq_along(gap_diff_list)),
                          gap_diff = gap_diff_list)
 
 pam_gap <- ggplot(data = pos_neg_df, aes(x = cluster, y = gap_diff)) +

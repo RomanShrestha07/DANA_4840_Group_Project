@@ -1,7 +1,6 @@
 ---
-title: "DANA4840 - Research Question 2"
-author: "Patricia Tating - 100407809"
-date: "`r Sys.Date()`"
+title: "DANA 4840 Project - Research Question 2"
+author: "Aryan Mukherjee, Maryam Gadimova, Patricia Tating, Roman Shrestha"
 output: html_document
 ---
 
@@ -103,7 +102,7 @@ fviz_cluster(list(data = mtcars, cluster = grp),
              ellipse.type = "convex", #Concentration ellipse
              repel = TRUE, #Avoid label overplotting (slow)
              show.clust.cent = FALSE, ggtheme = theme_minimal()
-             )
+)
 ```
 
 

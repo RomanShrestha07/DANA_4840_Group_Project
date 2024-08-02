@@ -1,6 +1,6 @@
 ---
-title: "DANA 4840 Research Question 1"
-author: "Roman"
+title: "DANA 4840 Project - Research Question 1"
+author: "Aryan Mukherjee, Maryam Gadimova, Patricia Tating, Roman Shrestha"
 output: html_document
 ---
 

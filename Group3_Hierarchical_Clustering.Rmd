@@ -2,8 +2,8 @@
 title: "DANA 4840 Project - Hierarchical Clustering"
 author: "Aryan Mukherjee, Maryam Gadimova, Patricia Tating, Roman Shrestha"
 output:
-  pdf_document: default
-  html_document: default
+pdf_document: default
+html_document: default
 ---
 
 # 1. Research Statement on Cars Dataset
@@ -158,7 +158,7 @@ grid.arrange(plot_cyl, plot_vs, plot_am, plot_gear, plot_carb, ncol = 3)
 ### 2.4.5. Scatterplot matrix
 ```{r}
 pairs(mtcars_numerical,
-   main="MT Cars Scatterplot Matrix")
+      main = "MT Cars Scatterplot Matrix")
 ```
 
 ### 2.4.6. Correlation Matrix
@@ -169,11 +169,11 @@ cor_matrix
 
 ### 2.4.7. Correlation Heatmap
 ```{r}
-corrplot(cor_matrix, 
+corrplot(cor_matrix,
          method = "color",
          type = "upper",
          col = colorRampPalette(c("white", "grey", "#4494a4"))(200),
-         tl.col = "black",  
+         tl.col = "black",
          tl.srt = 45)
 ```
 
@@ -222,7 +222,7 @@ mtcars_silhouette_hierarchical
 
 ### 3.2.2. Gap Statistics
 ```{r}
-mtcars_gap_hierarchical <- fviz_nbclust(mtcars, hcut, nstart = 50, 
+mtcars_gap_hierarchical <- fviz_nbclust(mtcars, hcut, nstart = 50,
                                         method = "gap_stat", nboot = 500)
 mtcars_gap_hierarchical
 ```
@@ -253,7 +253,7 @@ get_cluster_diff <- function(gap_stat, max_k = 10) {
 max_k <- 10
 gap_stat <- clusGap(mtcars, hcut, K.max = max_k, B = 500)
 gap_diff_list <- get_cluster_diff(gap_stat, 10)
-pos_neg_df <- data.frame(cluster = factor(seq_along(gap_diff_list)), 
+pos_neg_df <- data.frame(cluster = factor(seq_along(gap_diff_list)),
                          gap_diff = gap_diff_list)
 
 ggplot(data = pos_neg_df, aes(x = cluster, y = gap_diff)) +
@@ -289,14 +289,14 @@ single_cluster <- fviz_cluster(
 
 single_dendrogram <- fviz_dend(
   hc_single,
-  cex = 0.5, 
-  k = 2, 
-  k_colors = "jco", 
+  cex = 0.5,
+  k = 2,
+  k_colors = "jco",
   rect = TRUE,
-  rect_border = "jco", 
-  rect_fill = TRUE, 
+  rect_border = "jco",
+  rect_fill = TRUE,
   label_cols = "black",
-  label_cex = 0.5, 
+  label_cex = 0.5,
   main = "Single Linkage Dendrogram",
   ggtheme = theme_minimal()
 )
@@ -591,7 +591,7 @@ tanglegram(
   highlight_distinct_edges = FALSE, # Turn-off dashed lines
   common_subtrees_color_lines = FALSE, # Turn-off line colors
   common_subtrees_color_branches = TRUE, # Color common branches
-  main = paste("Tanglegram: Average vs. Complete Linkage, Entanglement =", 
+  main = paste("Tanglegram: Average vs. Complete Linkage, Entanglement =",
                round(entanglement(dendlist(average_dendrogram, complete_dendrogram)), 2))
 )
 ```
@@ -632,16 +632,16 @@ divisive_dendrogram
 
 ### 5.1.1 Average Linkage Method
 ```{r}
-intern_mtcars <- clValid(mtcars, 2:6, clMethods = "hierarchical", 
-                         validation = "internal", 
-                         method = "average", 
+intern_mtcars <- clValid(mtcars, 2:6, clMethods = "hierarchical",
+                         validation = "internal",
+                         method = "average",
                          metric = "manhattan")
 
 par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
 
 plot(intern_mtcars, legend = FALSE)
 
-plot(nClusters(intern_mtcars), 
+plot(nClusters(intern_mtcars),
      measures(intern_mtcars, "Dunn")[, , 1], type = "n", axes = FALSE, xlab = "", ylab = "")
 legend("center", clusterMethods(intern_mtcars), col = 1:9, lty = 1:9, pch = paste(1:9))
 ```
@@ -655,17 +655,17 @@ Overall, we can conclude that, based on these three validation methods, we shoul
 
 ### 5.1.2. Internal Validation in Comparison with the Linkages Method
 ```{r, message=FALSE, warning=FALSE}
-intern_complete <- clValid(mtcars, 2:6, clMethods = "hierarchical", 
-                           validation = "internal", method = "complete", 
+intern_complete <- clValid(mtcars, 2:6, clMethods = "hierarchical",
+                           validation = "internal", method = "complete",
                            metric = "manhattan")
-intern_average <- clValid(mtcars, 2:6, clMethods = "hierarchical", 
-                          validation = "internal", method = "average", 
+intern_average <- clValid(mtcars, 2:6, clMethods = "hierarchical",
+                          validation = "internal", method = "average",
                           metric = "manhattan")
-intern_single <- clValid(mtcars, 2:6, clMethods = "hierarchical", 
-                         validation = "internal", method = "single", 
+intern_single <- clValid(mtcars, 2:6, clMethods = "hierarchical",
+                         validation = "internal", method = "single",
                          metric = "manhattan")
-intern_ward <- clValid(mtcars, 2:6, clMethods = "hierarchical", 
-                       validation = "internal", method = "ward", 
+intern_ward <- clValid(mtcars, 2:6, clMethods = "hierarchical",
+                       validation = "internal", method = "ward",
                        metric = "manhattan")
 
 num_clusters <- nClusters(intern_complete)
@@ -690,13 +690,13 @@ silhouette_ward <- measures(intern_ward, "Silhouette")[, , 1]
 
 ```{r}
 # Plot Dunn Index
-plot(num_clusters, dunn_complete, type = "o", col = "#4494a4", 
+plot(num_clusters, dunn_complete, type = "o", col = "#4494a4",
      ylim = range(dunn_complete, dunn_average, dunn_single, dunn_ward),
      xlab = "Number of Clusters", ylab = "Dunn Index", main = "Dunn Index")
 lines(num_clusters, dunn_average, type = "o", col = "#7ca454")
 lines(num_clusters, dunn_single, type = "o", col = "#f9d448")
 lines(num_clusters, dunn_ward, type = "o", col = "#9fc4b7")
-legend("bottomright", legend = c("Complete", "Average", "Single", "Ward"), 
+legend("bottomright", legend = c("Complete", "Average", "Single", "Ward"),
        col = c("#4494a4", "#7ca454", "#f9d448", "#9fc4b7"), lty = 1, pch = 1, cex = 0.8)
 ```
 
@@ -704,14 +704,14 @@ legend("bottomright", legend = c("Complete", "Average", "Single", "Ward"),
 
 ```{r}
 # Plot Connectivity
-plot(num_clusters, connectivity_complete, type = "o", col = "#4494a4", 
-     ylim = range(connectivity_complete, connectivity_average, 
+plot(num_clusters, connectivity_complete, type = "o", col = "#4494a4",
+     ylim = range(connectivity_complete, connectivity_average,
                   connectivity_single, connectivity_ward),
      xlab = "Number of Clusters", ylab = "Connectivity", main = "Connectivity")
 lines(num_clusters, connectivity_average, type = "o", col = "#7ca454")
 lines(num_clusters, connectivity_single, type = "o", col = "#f9d448")
 lines(num_clusters, connectivity_ward, type = "o", col = "#9fc4b7")
-legend("bottomright", legend = c("Complete", "Average", "Single", "Ward"), 
+legend("bottomright", legend = c("Complete", "Average", "Single", "Ward"),
        col = c("#4494a4", "#7ca454", "#f9d448", "#9fc4b7"), lty = 1, pch = 1, cex = 0.8)
 ```
 **Connectivity:** The Average, Single, and Ward methods have the same Connectivity score (3.7179) for 2 clusters, which is lower than the Complete method's score (5.6488). This suggests that the Average, Single, and Ward methods provide more compact clusters compared to the Complete method.
@@ -719,14 +719,14 @@ legend("bottomright", legend = c("Complete", "Average", "Single", "Ward"),
 
 ```{r}
 # Plot Silhouette Width
-plot(num_clusters, silhouette_complete, type = "o", col = "#4494a4", 
-     ylim = range(silhouette_complete, silhouette_average, 
+plot(num_clusters, silhouette_complete, type = "o", col = "#4494a4",
+     ylim = range(silhouette_complete, silhouette_average,
                   silhouette_single, silhouette_ward),
      xlab = "Number of Clusters", ylab = "Silhouette Width", main = "Silhouette Width")
 lines(num_clusters, silhouette_average, type = "o", col = "#7ca454")
 lines(num_clusters, silhouette_single, type = "o", col = "#f9d448")
 lines(num_clusters, silhouette_ward, type = "o", col = "#9fc4b7")
-legend("bottomright", legend = c("Complete", "Average", "Single", "Ward"), 
+legend("bottomright", legend = c("Complete", "Average", "Single", "Ward"),
        col = c("#4494a4", "#7ca454", "#f9d448", "#9fc4b7"), lty1, pch = 1, cex = 0.8)
 ```
 **Silhouette Width:**
@@ -756,17 +756,17 @@ optimal_scores_stab_mtcars
 ```
 
 ```{r, message=FALSE, warning=FALSE}
-stab_complete <- clValid(mtcars, 2:6, clMethods = "hierarchical", 
-                         validation = "stability", method = "complete", 
+stab_complete <- clValid(mtcars, 2:6, clMethods = "hierarchical",
+                         validation = "stability", method = "complete",
                          metric = "manhattan")
-stab_average <- clValid(mtcars, 2:6, clMethods = "hierarchical", 
-                        validation = "stability", method = "average", 
+stab_average <- clValid(mtcars, 2:6, clMethods = "hierarchical",
+                        validation = "stability", method = "average",
                         metric = "manhattan")
-stab_single <- clValid(mtcars, 2:6, clMethods = "hierarchical", 
-                       validation = "stability", method = "single", 
+stab_single <- clValid(mtcars, 2:6, clMethods = "hierarchical",
+                       validation = "stability", method = "single",
                        metric = "manhattan")
-stab_ward <- clValid(mtcars, 2:6, clMethods = "hierarchical", 
-                     validation = "stability", method = "ward", 
+stab_ward <- clValid(mtcars, 2:6, clMethods = "hierarchical",
+                     validation = "stability", method = "ward",
                      metric = "manhattan")
 
 apn_complete <- measures(stab_complete, "APN")[, , 1]
@@ -792,20 +792,20 @@ fom_ward <- measures(stab_ward, "FOM")[, , 1]
 
 ```{r}
 # Plot APN
-plot(num_clusters, apn_complete, type = "o", col = "#4494a4", 
+plot(num_clusters, apn_complete, type = "o", col = "#4494a4",
      ylim = range(apn_complete, apn_average, apn_single, apn_ward),
-     xlab = "Number of Clusters", ylab = "APN", 
+     xlab = "Number of Clusters", ylab = "APN",
      main = "Average Proportion of Non-Overlap (APN)")
 lines(num_clusters, apn_average, type = "o", col = "#7ca454")
 lines(num_clusters, apn_single, type = "o", col = "#f9d448")
 lines(num_clusters, apn_ward, type = "o", col = "#9fc4b7")
-legend("topright", legend = c("Complete", "Average", "Single", "Ward"), 
+legend("topright", legend = c("Complete", "Average", "Single", "Ward"),
        col = c("#4494a4", "#7ca454", "#f9d448", "#9fc4b7"), lty = 1, pch = 1)
 ```
 
 ```{r}
 # Plot AD
-plot(num_clusters, ad_complete, type = "o", col = "#4494a4", 
+plot(num_clusters, ad_complete, type = "o", col = "#4494a4",
      ylim = range(ad_complete, ad_average, ad_single, ad_ward),
      xlab = "Number of Clusters", ylab = "AD", main = "Average Distance (AD)")
 lines(num_clusters, ad_average, type = "o", col = "#7ca454")
@@ -817,26 +817,26 @@ legend("topright", legend = c("Complete", "Average", "Single", "Ward"),
 
 ```{r}
 # Plot ADM
-plot(num_clusters, adm_complete, type = "o", col = "#4494a4", 
+plot(num_clusters, adm_complete, type = "o", col = "#4494a4",
      ylim = range(adm_complete, adm_average, adm_single, adm_ward),
-     xlab = "Number of Clusters", ylab = "ADM", 
+     xlab = "Number of Clusters", ylab = "ADM",
      main = "Average Distance between Means (ADM)")
 lines(num_clusters, adm_average, type = "o", col = "#7ca454")
 lines(num_clusters, adm_single, type = "o", col = "#f9d448")
 lines(num_clusters, adm_ward, type = "o", col = "#9fc4b7")
-legend("topright", legend = c("Complete", "Average", "Single", "Ward"), 
+legend("topright", legend = c("Complete", "Average", "Single", "Ward"),
        col = c("#4494a4", "#7ca454", "#f9d448", "#9fc4b7"), lty = 1, pch = 1)
 ```
 
 ```{r}
 # Plot FOM
-plot(num_clusters, fom_complete, type = "o", col = "#4494a4", 
+plot(num_clusters, fom_complete, type = "o", col = "#4494a4",
      ylim = range(fom_complete, fom_average, fom_single, fom_ward),
      xlab = "Number of Clusters", ylab = "FOM", main = "Figure of Merit (FOM)")
 lines(num_clusters, fom_average, type = "o", col = "#7ca454")
 lines(num_clusters, fom_single, type = "o", col = "#f9d448")
 lines(num_clusters, fom_ward, type = "o", col = "#9fc4b7")
-legend("topright", legend = c("Complete", "Average", "Single", "Ward"), 
+legend("topright", legend = c("Complete", "Average", "Single", "Ward"),
        col = c("#4494a4", "#7ca454", "#f9d448", "#9fc4b7"), lty = 1, pch = 1)
 ```
 
@@ -853,9 +853,9 @@ Therefore, considering all metrics, Average Linkage with k = 5 clusters is a str
 
 In this study, we employed agglomerative hierarchical clustering to analyze the automobile dataset, using various linkage methods to determine the optimal clustering approach. After comparing the performance of different methods, we found that the Average Linkage method provided the most meaningful and well-separated clusters. This method effectively grouped the car models into distinct categories, highlighting underlying patterns and characteristics, thereby aiding in better understanding and targeting of specific vehicle segments within the industry.
 
-The optimal number of clusters was determined to be two, based on various validation methods such as the Silhouette Analysis and Gap Statistics. 
+The optimal number of clusters was determined to be two, based on various validation methods such as the Silhouette Analysis and Gap Statistics.
 
-Cluster 1, characterized by lower horsepower, higher fuel efficiency, lower weight, smaller engine displacement, and fewer cylinders, indicating more economical and smaller cars like compact and subcompact cars. 
+Cluster 1, characterized by lower horsepower, higher fuel efficiency, lower weight, smaller engine displacement, and fewer cylinders, indicating more economical and smaller cars like compact and subcompact cars.
 
 Cluster 2, characterized by higher horsepower, lower fuel efficiency, higher weight, larger engine displacement, and more cylinders, indicating more powerful and larger cars such as sports cars, muscle cars, and luxury cars.
 
