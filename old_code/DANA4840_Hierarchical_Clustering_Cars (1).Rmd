@@ -1,0 +1,788 @@
+---
+title: "DANA 4840 Project - Hierarchical Clustering"
+author: "Aryan, Maryam, Patricia, Roman"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# 1. Research Statement on Cars Dataset
+The automobile industry continually seeks to understand the characteristics and performance of various car models in order to meet the varied needs of its customers. The given dataset contains numerous characteristics that can be used to categorize cars into different groups, including weight (wt), horsepower (hp), engine displacement (disp), and miles per gallon (mpg).
+
+The objective of this analysis is to segment the car models into clusters that represent different types of vehicles. This can help in understanding the underlying patterns in the data, such as identifying clusters of high-performance sports cars, fuel-efficient vehicles, or family-oriented models. Additionally, by using this clustering, marketers and producers can more successfully target particular customer categories.
+
+
+# 2. Preliminaries
+Before diving into the cluster analysis, let's first thoroughly examine and understand our data. This preliminary step will allow us to identify key patterns and characteristics within the dataset, ensuring a solid foundation for accurate analysis. By doing so, we can address any potential data quality issues and refine our approach for more meaningful results.
+
+```{r, message=FALSE, warning=FALSE}
+library("tidyverse")
+library("factoextra")
+library("dendextend")
+library("hopkins")
+library("corrplot")
+library("cluster")
+library("patchwork")
+library("clValid")
+library("gridExtra")
+```
+
+
+## 2.1. Reading the Data
+```{r}
+mtcars <- read.csv("data/mtcars.csv", header = T, sep = ",")
+head(mtcars)
+```
+
+
+### 2.1.1. Checking Data Structure
+```{r}
+dim(mtcars)
+str(mtcars)
+```
+We can see that our data comprises 32 observations of different car models and 12 automobile features of mixed (numeric, integer, character) data types.
+
+
+## 2.2 Feature Explanation
+The 'mtcars' dataset includes 12 features as detailed below:
+
+* 'model' (categorical): Model of the vehicle
+* 'mpg' (numerical): Miles/(US) gallon, a measure of fuel efficiency
+* 'cyl' (categorical-ordinal): Number of cylinders in the engine
+* 'disp' (numerical): Displacement in cubic inches
+* 'hp' (numerical): Gross horsepower
+* 'drat' (numerical): Rear axle ratio
+* 'wt' (numerical): Weight of the car (1000 lbs)
+* 'qsec' (numerical): 1/4 mile time, a measure of acceleration
+* 'vs' (binary): Engine type (0 = V-shaped, 1 = straight)
+* 'am' (binary): Transmission type (0 = automatic, 1 = manual)
+* 'gear' (categorical-ordinal): Number of forward gears
+* 'carb' (categorical-ordinal): Number of carburetor
+
+
+## 2.3 Data Pre-processing
+```{r}
+mtcars_categorical <- data.frame(
+  cyl = mtcars$cyl,
+  vs = mtcars$vs,
+  am = mtcars$am,
+  gear = mtcars$gear,
+  carb = mtcars$carb
+)
+
+mtcars_numerical <- data.frame(
+  mpg = mtcars$mpg,
+  disp = mtcars$disp,
+  hp = mtcars$hp,
+  drat = mtcars$drat,
+  wt = mtcars$wt,
+  qsec = mtcars$qsec
+)
+
+mtcars_numerical_scaled <- data.frame(scale(mtcars_numerical))
+
+mtcars_joined <- cbind(mtcars_numerical_scaled, mtcars_categorical)
+rownames(mtcars_joined) <- mtcars$model
+mtcars <- mtcars_joined
+head(mtcars)
+```
+Our numerical features have different scale of measurements, so we standardized the data to ensure each variable contributes equally to the distance calculations, preventing variables with larger scales to have more weight in the clustering results. We also do not standardize the categorical data.
+
+
+## 2.4 Exploratory Data Analysis
+
+### 2.4.1. Checking Missing Values
+```{r}
+missing_mtcars <- sapply(mtcars, function(x) sum(is.na(x)))
+missing_mtcars
+```
+From this we can see that our data does not have the presence of any missing values.
+
+
+### 2.4.2. Boxplots for Different Features
+```{r}
+color_palette <- c("#4494a4", "#7ca454", "#f9d448", "#9fc4b7", "#fcea9e", "#a6ccd4")
+
+boxplot(mtcars_numerical_scaled, horizontal = T, col = color_palette)
+```
+The graph presents standardized boxplots for several numerical variables, facilitating a comparative analysis of their distributions. The variables 'qsec', 'hp', and 'disp' exhibit lower medians and narrower ranges compared to 'wt', 'drat', and 'mpg'.
+
+Notably, the variables 'qsec', 'hp', and 'wt' have outliers on the positive side, indicating some data points that are significantly higher than the majority of the data for these variables.
+
+Besides this we can also see that the distribution of most of the numeric data are skewed either to the right or left with 'qsec', 'hp', and 'disp' being skewed to the right, 'wt' and 'drat' to the left, and 'mpg' appearing to be symmetric.
+
+
+### 2.4.3. Bar Plot for Categorical Variables
+```{r}
+set.seed(42)
+
+plot_cyl <- ggplot(mtcars_categorical, aes(x = factor(cyl), fill = factor(cyl))) +
+  geom_bar() +
+  scale_fill_manual(values = sample(color_palette, 3)) +
+  theme_classic() +
+  ggtitle("Cylinders")
+
+plot_vs <- ggplot(mtcars_categorical, aes(x = factor(vs), fill = factor(vs))) +
+  geom_bar() +
+  scale_fill_manual(values = sample(color_palette, 2)) +
+  theme_classic() +
+  ggtitle("Engine Shape (vs)")
+
+plot_am <- ggplot(mtcars_categorical, aes(x = factor(am), fill = factor(am))) +
+  geom_bar() +
+  scale_fill_manual(values = sample(color_palette, 2)) +
+  theme_classic() +
+  ggtitle("Transmission (am)")
+
+plot_gear <- ggplot(mtcars_categorical, aes(x = factor(gear), fill = factor(gear))) +
+  geom_bar() +
+  scale_fill_manual(values = sample(color_palette, 3)) +
+  theme_classic() +
+  ggtitle("Gears")
+
+plot_carb <- ggplot(mtcars_categorical, aes(x = factor(carb), fill = factor(carb))) +
+  geom_bar() +
+  scale_fill_manual(values = sample(color_palette, 6)) +
+  theme_classic() +
+  ggtitle("Carburetors")
+
+grid.arrange(plot_cyl, plot_vs, plot_am, plot_gear, plot_carb, ncol = 3)
+```
+* **Cylinders (cyl):** Cars with 8 cylinders are the most common, followed by those with 4 and 6 cylinders.
+* **Engine Shape (vs):** This plot categorizes cars based on engine shape, where 0 represent a V-shaped engine and 1 a straight engine. More cars have the V-shaped type of engine shape compared to the straight type.
+* **Transmission (am):** This plot indicates the type of transmission, with 0 representing automatic and 1 manual. There are more cars with the automatic type of transmission than the manual type.
+* **Gears (gear):** This plot shows the count of cars based on the number of gears. Cars with 3 gears are the most prevalent, followed by those with 4 and 5 gears.
+* **Carburetors (carb):** Cars with 2 carburetors are the most common, followed by those with 4 and 1. There are fewer cars with 6 and 8 carburetors.
+
+### 2.4.5 Scatterplot matrix
+```{r}
+pairs(mtcars_numerical,
+   main="Simple Scatterplot Matrix")
+```
+
+### 2.4.6 correlation matrix
+```{r}
+cor_matrix <- cor(mtcars_numerical, use = "complete.obs")
+cor_matrix
+```
+
+### Heatmap
+```{r}
+corrplot(cor_matrix, 
+         method = "color",
+         type = "upper",
+         col = colorRampPalette(c("white", "grey", "#4494a4"))(200),
+         tl.col = "black",  
+         tl.srt = 45,       
+         title = "Correlation Matrix")
+```
+
+* **Fuel Efficiency (mpg):** Strongly negatively correlated with engine displacement and vehicle weight, as expected. Moderately positively correlated with rear axle ratio and acceleration time.
+* **Engine Displacement (disp):** Strongly positively correlated with horsepower and vehicle weight. Moderately negatively correlated with rear axle ratio and acceleration time.
+* **Horsepower (hp):** Strongly correlated with engine displacement and moderately with vehicle weight. Moderately negatively correlated with rear axle ratio and acceleration time.
+* **Rear Axle Ratio (drat):** Strongly negatively correlated with engine displacement and moderately with horsepower.
+Weight (wt): Strongly negatively correlated with fuel efficiency and moderately with horsepower. Very weakly negatively correlated with acceleration time.
+* **Acceleration Time (qsec):** Moderately correlated with fuel efficiency and inversely correlated with engine displacement, horsepower, and weight.
+
+
+# 3. Pre-clustering Assessment
+Before performing clustering analysis, it is crucial to conduct a pre-clustering assessment to evaluate the dataset's cluster tendency and determine the optimal clustering approach. Tools like the Hopkins statistic and VAT can help assess whether the data points possess significant clustering tendencies. Once cluster tendency is established, the next step involves finding the optimal number of clusters. This can be achieved using methods such as the Elbow Method, Silhouette Analysis, or the Gap Statistic, each providing insights into the most meaningful way to partition the data.
+
+
+## 3.1. Assessing Cluster Tendency
+
+### 3.1.1. Hopkins Statistics
+```{r}
+set.seed(25)
+
+hopkins_mtcars <- hopkins(mtcars, m = ceiling(nrow(mtcars) / 10))
+hopkins_mtcars
+```
+
+
+### 3.1.2. Visual Assessment of Cluster Tendency (VAT)
+```{r}
+fviz_dist(
+  dist(mtcars, method = "manhattan"),
+  show_labels = FALSE,
+  gradient = list(low = "#f9d448", mid = "white", high = "grey")
+) + labs(title = "mtcar")
+```
+The Hopkins statistic of 0.9999998 indicates a strong clustering tendency in the dataset, suggesting that the data is well-suited for cluster analysis. The VAT plot visually reinforces this, showing two distinct blocks of similar values along the diagonal, which corresponds to well-separated clusters.
+
+
+## 3.2. Finding the Optimal Number of Clusters
+
+### 3.2.1. Silhouette Method
+```{r}
+mtcars_silhouette_hierarchical <- fviz_nbclust(mtcars, hcut, method = "silhouette")
+mtcars_silhouette_hierarchical
+```
+
+
+### 3.2.2. Gap Statistics
+```{r}
+mtcars_gap_hierarchical <- fviz_nbclust(mtcars, hcut, nstart = 50, method = "gap_stat", nboot = 500)
+mtcars_gap_hierarchical
+```
+
+
+### 3.2.2. Gap Statistics (Positive/Negative Graph)
+```{r}
+get_cluster_diff <- function(gap_stat, max_k = 10) {
+  gap_df <- as.data.frame(gap_stat$Tab)
+
+  gap_diff_list <- vector()
+  gap_val_list <- gap_df$gap
+  s_val_list <- gap_df$SE.sim
+
+  for (k in 1:max_k) {
+    if (k < max_k - 1) {
+      val <- gap_val_list[k] -
+        (gap_val_list[k + 1] -
+          s_val_list[k + 1])
+
+      gap_diff_list <- append(gap_diff_list, val)
+    }
+  }
+
+  return(gap_diff_list)
+}
+
+max_k <- 10
+gap_stat <- clusGap(mtcars, hcut, K.max = max_k, B = 500)
+gap_diff_list <- get_cluster_diff(gap_stat, 10)
+pos_neg_df <- data.frame(cluster = factor(seq_along(gap_diff_list)), gap_diff = gap_diff_list)
+
+ggplot(data = pos_neg_df, aes(x = cluster, y = gap_diff)) +
+  geom_bar(stat = "identity", fill = "#4494a4") +
+  xlab("Number of clusters K") +
+  ylab("Gap(k) - (Gap(k+1) - Sk+1)") +
+  ggtitle("Gap Statistic for Hierarchical Clustering") +
+  theme_classic()
+```
+Both the Silhouette Width graph and the Gap Statistic graph indicates that the optimal number of clusters is k=2. In case of our silhouette width graph it is the point where the value of the average silhouette width is the highest and similarly for the gap statistic graph this conclusion is drawn from observing the most significant change in the gap statistic value at this point.
+
+
+# 4. Clustering Analysis
+
+## 4.1. Agglomerative Hierarchical Clustering
+
+### 4.1.1.  Single Linkage Method
+```{r}
+res.dist <- dist(mtcars, method = "manhattan")
+
+hc_single <- hclust(d = res.dist, method = "single")
+grp_single <- cutree(hc_single, k = 2)
+
+single_cluster <- fviz_cluster(
+  list(data = mtcars, cluster = grp_single),
+  palette = "jco",
+  geom = "point",
+  ellipse.type = "convex",
+  show.clust.cent = FALSE,
+  main = "Single Linkage Cluster",
+  ggtheme = theme_minimal()
+)
+
+single_dendrogram <- fviz_dend(
+  hc_single,
+  cex = 0.5, # Increase the label size
+  k = 2, # Number of clusters
+  k_colors = "jco", # Color palette for clusters
+  rect = TRUE,
+  rect_border = "jco", # Add rectangle around clusters
+  rect_fill = TRUE, # Fill the rectangle
+  label_cols = "black", # Color of labels
+  label_cex = 0.5, # Font size of labels
+  main = "Single Linkage Dendrogram",
+  ggtheme = theme_minimal()
+)
+single_dendrogram
+```
+
+
+### 4.1.2 Complete Linkage Method
+```{r}
+hc_complete <- hclust(d = res.dist, method = "complete")
+grp_complete <- cutree(hc_complete, k = 2)
+
+complete_cluster <- fviz_cluster(
+  list(data = mtcars, cluster = grp_complete),
+  palette = "jco",
+  geom = "point",
+  ellipse.type = "convex",
+  show.clust.cent = FALSE,
+  main = "Complete Linkage Cluster",
+  ggtheme = theme_minimal()
+)
+
+complete_dendrogram <- fviz_dend(
+  hc_complete,
+  cex = 0.5,
+  k = 2,
+  k_colors = "jco",
+  rect = TRUE,
+  rect_border = "jco",
+  rect_fill = TRUE,
+  label_cols = "black",
+  label_cex = 0.5,
+  main = "Complete Linkage Dendrogram",
+  ggtheme = theme_minimal()
+)
+complete_dendrogram
+```
+
+
+### 4.1.3 Average Linkage Method
+```{r}
+hc_average <- hclust(d = res.dist, method = "average")
+grp_average <- cutree(hc_average, k = 2)
+
+average_cluster <- fviz_cluster(
+  list(data = mtcars, cluster = grp_average),
+  palette = "jco",
+  geom = "point",
+  ellipse.type = "convex",
+  show.clust.cent = FALSE,
+  main = "Average Linkage Cluster",
+  ggtheme = theme_minimal()
+)
+
+average_dendrogram <- fviz_dend(
+  hc_average,
+  cex = 0.5,
+  k = 2,
+  k_colors = "jco",
+  rect = TRUE,
+  rect_border = "jco",
+  rect_fill = TRUE,
+  label_cols = "black",
+  label_cex = 0.5,
+  main = "Average Linkage Dendrogram",
+  ggtheme = theme_minimal()
+)
+average_dendrogram
+```
+
+
+### 4.1.4 Ward Linkage Method
+```{r}
+hc_ward_d <- hclust(d = res.dist, method = "ward.D")
+grp_ward_d <- cutree(hc_ward_d, k = 2)
+
+ward_d_cluster <- fviz_cluster(
+  list(data = mtcars, cluster = grp_ward_d),
+  palette = "jco",
+  geom = "point",
+  ellipse.type = "convex",
+  show.clust.cent = FALSE,
+  main = "Ward D Linkage Cluster",
+  ggtheme = theme_minimal()
+)
+
+ward_d_dendrogram <- fviz_dend(
+  hc_ward_d,
+  cex = 0.5,
+  k = 2,
+  k_colors = "jco",
+  rect = TRUE,
+  rect_border = "jco",
+  rect_fill = TRUE,
+  label_cols = "black",
+  label_cex = 0.5,
+  main = "Ward D Linkage Dendrogram",
+  ggtheme = theme_minimal()
+)
+ward_d_dendrogram
+```
+
+
+### 4.1.5 Ward.D2 Method
+```{r}
+hc_ward_d2 <- hclust(d = res.dist, method = "ward.D2")
+grp_ward_d2 <- cutree(hc_ward_d2, k = 2)
+
+ward_d2_cluster <- fviz_cluster(
+  list(data = mtcars, cluster = grp_ward_d2),
+  palette = "jco",
+  geom = "point",
+  ellipse.type = "convex",
+  show.clust.cent = FALSE,
+  main = "Ward D2 Linkage Cluster",
+  ggtheme = theme_minimal()
+)
+
+ward_d2_dendrogram <- fviz_dend(
+  hc_ward_d2,
+  cex = 0.5,
+  k = 2,
+  k_colors = "jco",
+  rect = TRUE,
+  rect_border = "jco",
+  rect_fill = TRUE,
+  label_cols = "black",
+  label_cex = 0.5,
+  main = "Ward D2 Linkage Dendrogram",
+  ggtheme = theme_minimal()
+)
+ward_d2_dendrogram
+```
+
+
+## 4.2 Comparing Linkage Methods
+
+### 4.2.1 Comparing Dendrograms
+```{r}
+single_dendrogram +
+  complete_dendrogram +
+  average_dendrogram +
+  ward_d_dendrogram +
+  ward_d2_dendrogram +
+  plot_layout(ncol = 2)
+```
+Ward D and Ward D2 linkage methods show the highest height between clusters when they are joined, indicating good separability between the clusters. The Average linkage method also shows moderate separability between clusters. In contrast, the Complete linkage method demonstrates a greater disparity in the height at which clusters are joined, suggesting less uniformity in cluster separation. The Average linkage method typically has the lowest height for merging clusters, which implies that the clusters are less well-separated compared to the other methods.
+
+### 4.2.2 Comparing Clusters
+```{r}
+single_cluster +
+  complete_cluster +
+  average_cluster +
+  ward_d_cluster +
+  ward_d2_cluster +
+  plot_layout(ncol = 2)
+```
+When comparing the clusters visually, we observe that all linkage methods produce similar results except for the Complete linkage method. This suggests that Complete linkage provides a unique clustering outcome compared to the other methods. The fact that five out of the six methods yield similar results reinforces the reliability of the clustering result, indicating that the observed clustering pattern is robust and not solely dependent on the linkage method.
+
+
+### 4.2.3 Correlation between cophenetic distance and the original distance
+```{r}
+cor(res.dist, cophenetic(hc_single))
+cor(res.dist, cophenetic(hc_complete))
+cor(res.dist, cophenetic(hc_average))
+cor(res.dist, cophenetic(hc_ward_d))
+cor(res.dist, cophenetic(hc_ward_d2))
+```
+This suggests that the cophenetic distances are fairly consistent with the original pairwise distances in the distance matrix.
+
+The high correlation coefficient of all methods demonstrates that all the methods effectively preserves the original distance relationships between data points. This validates the robustness of the clustering results and confirms that they are all reliable approaches.
+
+
+
+
+### 4.2.4 Correlation Matrix
+```{r}
+dend_complete <- mtcars %>%
+  dist %>%
+  hclust("complete") %>%
+  as.dendrogram
+dend_single <- mtcars %>%
+  dist %>%
+  hclust("single") %>%
+  as.dendrogram
+dend_average <- mtcars %>%
+  dist %>%
+  hclust("average") %>%
+  as.dendrogram
+dend_ward <- mtcars %>%
+  dist %>%
+  hclust("ward.D") %>%
+  as.dendrogram
+dend_ward2 <- mtcars %>%
+  dist %>%
+  hclust("ward.D2") %>%
+  as.dendrogram
+```
+
+```{r}
+dend_list <- dendlist(
+  "Complete" = dend_complete,
+  "Single" = dend_single,
+  "Average" = dend_average,
+  "WardD" = dend_ward,
+  "WardD2" = dend_ward2
+)
+
+cors_cophenetic <- cor.dendlist(dend_list, method = "cophenetic")
+
+round(cors_cophenetic, 2)
+```
+The cophenetic correlation measures how similarly the clustering patterns are preserved in terms of pairwise distances. In other words, this correlation indicates how well the hierarchical clustering preserves the pairwise distances between observations.
+
+- *High Correlation (close to 1):* Single and Average (0.92), WardD and WardD2 (0.99), Single and Centroid (0.91). Indicates these methods produce similar clustering patterns.
+- *Moderate Correlation:* Complete and Single (0.84), Complete and Average (0.79), Average and WardD (0.80).
+- *Low Correlation:* Complete and WardD (0.59), Centroid and WardD (0.53). Indicates different clustering patterns.
+
+
+
+
+```{r}
+cors_baker <- cor.dendlist(dend_list, method = "baker")
+
+round(cors_baker, 2)
+```
+The Baker correlation measures the similarity in the structure of the dendrograms. In other words, this correlation indicates the similarity in the overall structure of the dendrograms.
+
+- *High Correlation:* WardD and WardD2 (0.98), Average and WardD (0.85), Average and WardD2 (0.90). Indicates similar dendrogram structures.
+- *Moderate Correlation:* Complete and Single (0.85), Single and Average (0.76).
+- *Low Correlation:* Complete and Centroid (0.11), Single and Centroid (0.07), Centroid with most others. Indicates different dendrogram structures.
+
+
+```{r}
+corrplot(cors_cophenetic, method = "pie", type = "lower", col = color_palette, tl.col = "black")
+```
+* The Single and Average methods, as well as the two Ward methods (WardD and WardD2), exhibit very high correlations, indicating that these methods produce very similar clustering results.
+* The Complete and Centroid methods show lower correlations with other methods, particularly with WardD, reflecting more distinct clustering structures compared to the others.
+
+- *Strong Positive Correlations:*
+- WardD and WardD2 are very similar to each other, indicating that the results from these methods are almost identical.
+
+- *Moderate Positive Correlations:*
+- Single Linkage and Average Linkage are more similar to each other compared to their similarity with WardD and WardD2.
+
+- *Weak or No Correlation:*
+- Complete Linkage has moderate similarity with Single Linkage and Average Linkage, but is less similar to WardD and WardD2.
+
+- *Negative Correlations:*
+- There are no cells shaded in red, indicating no negative correlations between the linkage methods.
+
+
+### 4.2.5 Finding best Linkage Method
+```{r}
+linkage_methods <- c("Single", "Complete", "Average", "Ward.D", "Ward.D2")
+
+cophenetic_correlations <- c(
+  cor(res.dist, cophenetic(hc_single)),
+  cor(res.dist, cophenetic(hc_complete)),
+  cor(res.dist, cophenetic(hc_average)),
+  cor(res.dist, cophenetic(hc_ward_d)),
+  cor(res.dist, cophenetic(hc_ward_d2))
+)
+
+cophenetic_df <- data.frame(
+  linkage_method = linkage_methods,
+  cophenetic_correlation = cophenetic_correlations
+)
+
+cophenetic_df
+```
+
+```{r}
+ggplot(cophenetic_df, aes(x = linkage_method, y = cophenetic_correlation)) +
+  geom_bar(stat = "identity", fill = "#4494a4") +
+  theme_classic() +
+  labs(
+    title = "Cophenetic Correlation Coefficients for Different Linkage Methods",
+    x = "Linkage Method",
+    y = "Cophenetic Correlation Coefficient"
+  ) +
+  geom_text(aes(label = round(cophenetic_correlation, 3)))
+```
+In this case, the Average linkage method has the highest cophenetic correlation coefficient (0.8010725), followed closely by the Complete linkage method (0.7858564). These methods are the best fit for our data based on the cophenetic correlation coefficient.
+
+
+### 4.2.6 Tanglegram of the Average Linkage Method
+```{r}
+average_dendrogram <- as.dendrogram(hc_average)
+complete_dendrogram <- as.dendrogram(hc_complete)
+
+tanglegram(
+  average_dendrogram,
+  complete_dendrogram,
+  color_lines = color_palette,
+  highlight_distinct_edges = FALSE, # Turn-off dashed lines
+  common_subtrees_color_lines = FALSE, # Turn-off line colors
+  common_subtrees_color_branches = TRUE, # Color common branches
+  main = paste("Tanglegram: Average vs. Complete Linkage, Entanglement =", round(entanglement(dendlist(average_dendrogram, complete_dendrogram)), 2))
+)
+```
+We observe that car models like the AMC Javelin, Dodge Challenger, and Pontiac Firebird are connected by very straight and untangled lines, indicating that both the Average Linkage and Complete Linkage methods cluster these models similarly. This consistency suggests that these models share strong similarities, such as engine type, body style, or performance metrics, which are robustly identified by both methods.
+
+In contrast, the rest of the nodes exhibit significant tangling, showing that most car models are clustered differently by the two methods. The tangled lines indicate variability in how the Average Linkage and Complete Linkage methods interpret distances between these models, leading to different cluster formations. This tangling for the majority of the car models suggests that their similarities are less pronounced or more complex, making their clustering less stable across different methods.
+
+
+
+
+## 4.3 Alternative Hierarchical Clustering Methods
+
+### 4.3.1. Divisive Analysis Clustering
+```{r}
+res.diana <- diana(
+  x = mtcars,
+  metric = "manhattan"
+)
+
+divisive_dendrogram <- fviz_dend(
+  res.diana,
+  cex = 0.5,
+  k = 2,
+  k_colors = "jco",
+  rect = TRUE,
+  rect_border = "jco",
+  rect_fill = TRUE,
+  label_cols = "black",
+  label_cex = 0.5,
+  main = "Divisive Clustering Dendrogram",
+  ggtheme = theme_minimal()
+)
+divisive_dendrogram
+```
+
+
+# 5. Cluster Validation
+
+## 5.1 Internal Validation
+
+### 5.1.1 Average Linkage Method
+```{r}
+intern_mtcars <- clValid(mtcars, 2:6, clMethods = "hierarchical", validation = "internal", method = "average", metric = "manhattan")
+
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+
+plot(intern_mtcars, legend = FALSE)
+
+plot(nClusters(intern_mtcars), measures(intern_mtcars, "Dunn")[, , 1], type = "n", axes = FALSE, xlab = "", ylab = "")
+legend("center", clusterMethods(intern_mtcars), col = 1:9, lty = 1:9, pch = paste(1:9))
+```
+
+Connectivity: According to connectivity, the oprimal number of clusters is 2 as that is where it is lowest
+Dunn: According to Dunn index, the optimal number of clusters is 5 as it is highest at k=5
+Silhouette: According to Silhouette width, the optimal number of clusters is 2 as it is highest at k=2
+
+
+```{r}
+intern_complete <- clValid(mtcars, 2:6, clMethods = "hierarchical", validation = "internal", method = "complete", metric = "manhattan")
+intern_average <- clValid(mtcars, 2:6, clMethods = "hierarchical", validation = "internal", method = "average", metric = "manhattan")
+intern_single <- clValid(mtcars, 2:6, clMethods = "hierarchical", validation = "internal", method = "single", metric = "manhattan")
+intern_ward <- clValid(mtcars, 2:6, clMethods = "hierarchical", validation = "internal", method = "ward", metric = "manhattan")
+
+num_clusters <- nClusters(intern_complete)
+
+dunn_complete <- measures(intern_complete, "Dunn")[, , 1]
+dunn_average <- measures(intern_average, "Dunn")[, , 1]
+dunn_single <- measures(intern_single, "Dunn")[, , 1]
+dunn_ward <- measures(intern_ward, "Dunn")[, , 1]
+
+connectivity_complete <- measures(intern_complete, "Connectivity")[, , 1]
+connectivity_average <- measures(intern_average, "Connectivity")[, , 1]
+connectivity_single <- measures(intern_single, "Connectivity")[, , 1]
+connectivity_ward <- measures(intern_ward, "Connectivity")[, , 1]
+
+silhouette_complete <- measures(intern_complete, "Silhouette")[, , 1]
+silhouette_average <- measures(intern_average, "Silhouette")[, , 1]
+silhouette_single <- measures(intern_single, "Silhouette")[, , 1]
+silhouette_ward <- measures(intern_ward, "Silhouette")[, , 1]
+
+# Plot Dunn index
+par(mfrow = c(3, 1), mar = c(4, 4, 3, 1))
+plot(num_clusters, dunn_complete, type = "o", col = "#4494a4", ylim = range(dunn_complete, dunn_average, dunn_single, dunn_ward),
+     xlab = "Number of Clusters", ylab = "Dunn Index", main = "Dunn Index")
+lines(num_clusters, dunn_average, type = "o", col = "#7ca454")
+lines(num_clusters, dunn_single, type = "o", col = "#f9d448")
+lines(num_clusters, dunn_ward, type = "o", col = "#9fc4b7")
+legend("bottomright", legend = c("Complete", "Average", "Single", "Ward"), col = c("#4494a4", "#7ca454", "#f9d448", "#9fc4b7"), lty = 1, pch = 1, cex = 0.8)
+
+# Plot Connectivity
+plot(num_clusters, connectivity_complete, type = "o", col = "#4494a4", ylim = range(connectivity_complete, connectivity_average, connectivity_single, connectivity_ward),
+     xlab = "Number of Clusters", ylab = "Connectivity", main = "Connectivity")
+lines(num_clusters, connectivity_average, type = "o", col = "#7ca454")
+lines(num_clusters, connectivity_single, type = "o", col = "#f9d448")
+lines(num_clusters, connectivity_ward, type = "o", col = "#9fc4b7")
+legend("bottomright", legend = c("Complete", "Average", "Single", "Ward"), col = c("#4494a4", "#7ca454", "#f9d448", "#9fc4b7"), lty = 1, pch = 1, cex = 0.8)
+
+# Plot Silhouette
+plot(num_clusters, silhouette_complete, type = "o", col = "#4494a4", ylim = range(silhouette_complete, silhouette_average, silhouette_single, silhouette_ward),
+     xlab = "Number of Clusters", ylab = "Silhouette Width", main = "Silhouette Width")
+lines(num_clusters, silhouette_average, type = "o", col = "#7ca454")
+lines(num_clusters, silhouette_single, type = "o", col = "#f9d448")
+lines(num_clusters, silhouette_ward, type = "o", col = "#9fc4b7")
+legend("bottomright", legend = c("Complete", "Average", "Single", "Ward"), col = c("#4494a4", "#7ca454", "#f9d448", "#9fc4b7"), lty1, pch = 1, cex = 0.8)
+```
+
+Dunn Index: The highest value is for single linkage method at k=6
+Connectivity: Average, single and ward linkage methods have the lowest connectivity at k=2, with single linkage method being lower than the rest consistently 
+Silhouette width: Average, single and ward linkage methods have the highest Silhouette width at k=2, with average linkage method being higher than the rest consistintly
+
+## 5.2 Stability Validation
+```{r}
+stab_mtcars <- clValid(mtcars, 2:6, clMethods = "hierarchical", validation = "stability")
+
+optimal_scores_stab_mtcars <- optimalScores(stab_mtcars)
+optimal_scores_stab_mtcars
+```
+
+* **APN (Average Path Length):** K-means clustering with 2 clusters achieves the lowest APN score, indicating that this configuration provides the most efficient pairwise distances within clusters, minimizing the average distance between neighbors.
+* **AD (Average Distance):** PAM clustering with 6 clusters yields the highest AD score, reflecting the average distance within clusters. This suggests that with 6 clusters, the average intra-cluster distance is relatively high, which may indicate that the clusters are more dispersed or less compact.
+* **ADM (Average Dissimilarity):** K-means clustering with 2 clusters provides the lowest ADM score, implying the smallest average distance in the distance matrix, suggesting a good clustering result where distances are well managed.
+* **FOM (Freeman's Measure):** Hierarchical clustering with 6 clusters achieves the highest FOM score. The Fowlkes-Mallows Index evaluates the similarity between the clusters and the true classifications (if available). A higher FOM score indicates better clustering quality, with 6 clusters being particularly effective in capturing the true structure of the data.
+
+
+```{r}
+stab_complete <- clValid(mtcars, 2:6, clMethods = "hierarchical", validation = "stability", method = "complete", metric = "manhattan")
+stab_average <- clValid(mtcars, 2:6, clMethods = "hierarchical", validation = "stability", method = "average", metric = "manhattan")
+stab_single <- clValid(mtcars, 2:6, clMethods = "hierarchical", validation = "stability", method = "single", metric = "manhattan")
+stab_ward <- clValid(mtcars, 2:6, clMethods = "hierarchical", validation = "stability", method = "ward", metric = "manhattan")
+
+apn_complete <- measures(stab_complete, "APN")[, , 1]
+apn_average <- measures(stab_average, "APN")[, , 1]
+apn_single <- measures(stab_single, "APN")[, , 1]
+apn_ward <- measures(stab_ward, "APN")[, , 1]
+
+ad_complete <- measures(stab_complete, "AD")[, , 1]
+ad_average <- measures(stab_average, "AD")[, , 1]
+ad_single <- measures(stab_single, "AD")[, , 1]
+ad_ward <- measures(stab_ward, "AD")[, , 1]
+
+adm_complete <- measures(stab_complete, "ADM")[, , 1]
+adm_average <- measures(stab_average, "ADM")[, , 1]
+adm_single <- measures(stab_single, "ADM")[, , 1]
+adm_ward <- measures(stab_ward, "ADM")[, , 1]
+
+fom_complete <- measures(stab_complete, "FOM")[, , 1]
+fom_average <- measures(stab_average, "FOM")[, , 1]
+fom_single <- measures(stab_single, "FOM")[, , 1]
+fom_ward <- measures(stab_ward, "FOM")[, , 1]
+
+# Plot APN
+par(mfrow = c(4, 1), mar = c(4, 4, 3, 1))
+plot(num_clusters, apn_complete, type = "o", col = "#4494a4", ylim = range(apn_complete, apn_average, apn_single, apn_ward),
+     xlab = "Number of Clusters", ylab = "APN", main = "Average Proportion of Non-Overlap (APN)")
+lines(num_clusters, apn_average, type = "o", col = "#7ca454")
+lines(num_clusters, apn_single, type = "o", col = "#f9d448")
+lines(num_clusters, apn_ward, type = "o", col = "#9fc4b7")
+legend("topright", legend = c("Complete", "Average", "Single", "Ward"), col = c("#4494a4", "#7ca454", "#f9d448", "#9fc4b7"), lty = 1, pch = 1)
+
+# Plot AD
+plot(num_clusters, ad_complete, type = "o", col = "#4494a4", ylim = range(ad_complete, ad_average, ad_single, ad_ward),
+     xlab = "Number of Clusters", ylab = "AD", main = "Average Distance (AD)")
+lines(num_clusters, ad_average, type = "o", col = "#7ca454")
+lines(num_clusters, ad_single, type = "o", col = "#f9d448")
+lines(num_clusters, ad_ward, type = "o", col = "#9fc4b7")
+legend("topright", legend = c("Complete", "Average", "Single", "Ward"), col = c("#4494a4", "#7ca454", "#f9d448", "#9fc4b7"), lty = 1, pch = 1)
+
+# Plot ADM
+plot(num_clusters, adm_complete, type = "o", col = "#4494a4", ylim = range(adm_complete, adm_average, adm_single, adm_ward),
+     xlab = "Number of Clusters", ylab = "ADM", main = "Average Distance between Means (ADM)")
+lines(num_clusters, adm_average, type = "o", col = "#7ca454")
+lines(num_clusters, adm_single, type = "o", col = "#f9d448")
+lines(num_clusters, adm_ward, type = "o", col = "#9fc4b7")
+legend("topright", legend = c("Complete", "Average", "Single", "Ward"), col = c("#4494a4", "#7ca454", "#f9d448", "#9fc4b7"), lty = 1, pch = 1)
+
+# Plot FOM
+plot(num_clusters, fom_complete, type = "o", col = "#4494a4", ylim = range(fom_complete, fom_average, fom_single, fom_ward),
+     xlab = "Number of Clusters", ylab = "FOM", main = "Figure of Merit (FOM)")
+lines(num_clusters, fom_average, type = "o", col = "#7ca454")
+lines(num_clusters, fom_single, type = "o", col = "#f9d448")
+lines(num_clusters, fom_ward, type = "o", col = "#9fc4b7")
+legend("topright", legend = c("Complete", "Average", "Single", "Ward"), col = c("#4494a4", "#7ca454", "#f9d448", "#9fc4b7"), lty = 1, pch = 1)
+```
+
+* APN: The highest value is k-means at k=3.
+* AD: It seems like all 3 (hierarchical, PAM, and k-means) are lowest at the same point k=6. PAM is slightly lower than the other 2 methods overall.
+* ADM: The highest value is k-means at k-3, similar to APN.
+* FOM: Hierarchical and k-means methods are the lowest at k=6. K-means seems to have lower values overall though, so it may be better.
+
+
+
+# 6. Conclusion and Recommendation
+TODO: conclusion

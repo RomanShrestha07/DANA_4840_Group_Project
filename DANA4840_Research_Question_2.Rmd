@@ -1,0 +1,203 @@
+---
+title: "DANA4840 - Research Question 2"
+author: "Patricia Tating - 100407809"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+How can we identify and interpret similarities in features within clustering results to enhance the understanding of cluster formation and structure?
+
+## Loading the Libraries
+```{r, message=FALSE, warning=FALSE}
+library("tidyverse")
+library("factoextra")
+library("dendextend")
+library("cluster")
+```
+
+## Reading the Data
+```{r}
+mtcars <- read.csv("data/mtcars.csv", header = T, sep = ",")
+head(mtcars)
+```
+
+## Checking Data Structure
+```{r}
+dim(mtcars)
+str(mtcars)
+```
+We can see that our data comprises 32 observations of different car models and 12 automobile features of mixed (numeric, integer, character) data types.
+
+
+## Data Pre-processing
+```{r}
+mtcars_categorical <- data.frame(
+  cyl = mtcars$cyl,
+  vs = mtcars$vs,
+  am = mtcars$am,
+  gear = mtcars$gear,
+  carb = mtcars$carb
+)
+
+mtcars_numerical <- data.frame(
+  mpg = mtcars$mpg,
+  disp = mtcars$disp,
+  hp = mtcars$hp,
+  drat = mtcars$drat,
+  wt = mtcars$wt,
+  qsec = mtcars$qsec
+)
+
+mtcars_numerical_scaled <- data.frame(scale(mtcars_numerical))
+
+mtcars_joined <- cbind(mtcars_numerical_scaled, mtcars_categorical)
+rownames(mtcars_joined) <- mtcars$model
+mtcars <- mtcars_joined
+head(mtcars)
+```
+
+### Average Linkage Method
+```{r}
+hc_average <- hclust(d = res.dist, method = "average")
+grp_average <- cutree(hc_average, k = 2)
+
+average_cluster <- fviz_cluster(
+  list(data = mtcars, cluster = grp_average),
+  palette = "jco",
+  geom = "point",
+  ellipse.type = "convex",
+  show.clust.cent = FALSE,
+  main = "Average Linkage Cluster",
+  ggtheme = theme_minimal()
+)
+
+average_dendrogram <- fviz_dend(
+  hc_average,
+  cex = 0.5,
+  k = 2,
+  k_colors = "jco",
+  rect = TRUE,
+  rect_border = "jco",
+  rect_fill = TRUE,
+  label_cols = "black",
+  label_cex = 0.5,
+  main = "Average Linkage Dendrogram",
+  ggtheme = theme_minimal()
+)
+average_dendrogram
+```
+
+## Clustering Results
+```{r}
+grp <- cutree(hc_average, k = 2)
+head(grp, n = 32)
+```
+
+```{r}
+table(grp)
+```
+
+```{r}
+fviz_cluster(list(data = mtcars, cluster = grp),
+             palette = c("#2E9FDF", "#E7B800"),
+             ellipse.type = "convex", #Concentration ellipse
+             repel = TRUE, #Avoid label overplotting (slow)
+             show.clust.cent = FALSE, ggtheme = theme_minimal()
+             )
+```
+
+
+
+```{r}
+mtcars_num_results <- cbind(
+  mtcars_numerical,
+  hclust_average = grp
+)
+```
+
+```{r}
+par(mfrow = c(2, 3))
+
+mtcars_results_col <- colnames(mtcars_num_results)[-length(colnames(mtcars_num_results))]
+
+for (i in seq_along(mtcars_results_col)) {
+  column_name <- mtcars_results_col[i]
+
+  boxplot(
+    mtcars_num_results[[column_name]] ~ mtcars_num_results$hclust_average,
+    xlab = "H Cluster",
+    ylab = column_name,
+    main = paste(column_name),
+    col = color_palette[i %% length(color_palette) + 1]
+  )
+}
+
+par(mfrow = c(1, 1))
+```
+```{r}
+mtcars_cat_results <- cbind(
+  mtcars_categorical,
+  hclust_average = grp
+)
+mtcars_cat_results
+```
+
+```{r}
+mtcars_cat_results$hclust_average <- as.factor(mtcars_cat_results$hclust_average)
+
+variables_to_plot <- colnames(mtcars_cat_results)[colnames(mtcars_cat_results) != "hclust_average"]
+
+plot_cyl <- ggplot(mtcars_cat_results, aes(x = factor(cyl), fill = factor(hclust_average))) +
+  geom_bar(position = "dodge") +
+  scale_fill_manual(values = sample(color_palette, 6)) +
+  theme_classic() +
+  ggtitle("Cylinders")
+
+plot_vs <- ggplot(mtcars_cat_results, aes(x = factor(vs), fill = factor(hclust_average))) +
+  geom_bar(position = "dodge") +
+  scale_fill_manual(values = samplesample(color_palette, 4)) +
+  theme_classic() +
+  ggtitle("Engine Shape (vs)")
+
+plot_am <- ggplot(mtcars_cat_results, aes(x = factor(am), fill = factor(hclust_average))) +
+  geom_bar(position = "dodge") +
+  scale_fill_manual(values = sample(color_palette, 4)) +
+  theme_classic() +
+  ggtitle("Transmission (am)")
+
+plot_gear <- ggplot(mtcars_cat_results, aes(x = factor(gear), fill = factor(hclust_average))) +
+  geom_bar(position = "dodge") +
+  scale_fill_manual(values = sample(color_palette, 4)) +
+  theme_classic() +
+  ggtitle("Gears")
+
+plot_carb <- ggplot(mtcars_cat_results, aes(x = factor(carb), fill = factor(hclust_average))) +
+  geom_bar(position = "dodge") +
+  scale_fill_manual(values = sample(color_palette, 12)) +
+  theme_classic() +
+  ggtitle("Carburetors")
+
+# Arrange the plots in a grid
+grid.arrange(plot_cyl, plot_vs, plot_am, plot_gear, plot_carb, ncol = 2)
+
+```
+
+**Cluster 1:** Cars in this cluster typically have:
+
+- Lower horsepower (hp)
+- Higher fuel efficiency (mpg)
+- Lower weight (wt)
+- Smaller engine displacement (disp)
+-Fewer cylinders (cyl)
+
+These characteristics suggest that cars in Cluster 1 are generally more economical and smaller, possibly including compact and subcompact cars.
+
+**Cluster 2:** Cars in this cluster typically have:
+
+- Higher horsepower (hp)
+- Lower fuel efficiency (mpg)
+- Higher weight (wt)
+- Larger engine displacement (disp)
+- More cylinders (cyl)
+
+These characteristics suggest that cars in Cluster 2 are generally more powerful and larger, possibly including sports cars, muscle cars, and luxury cars.

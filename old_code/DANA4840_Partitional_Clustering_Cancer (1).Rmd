@@ -2,8 +2,9 @@
 title: "DANA 4840 Project - Partition Clustering"
 author: "Aryan Mukherjee, Maryam Gadimova, Patricia Tating, Roman Shrestha"
 output:
-  pdf_document: default
+  word_document: default
   html_document: default
+  pdf_document: default
 ---
 
 # 1. Research Statement on Breast Cancer Dataset
@@ -163,7 +164,7 @@ pie(diagnosis_rel_freq,
 ```
 Benign cancer makes up approximately 62.9% of the dataset, while Malignant cancer constitutes about 37.1%. Benign cancer cases are approximately 1.69 times more prevalent than Malignant cancer cases in the dataset.
 
-### 2.3.4. Correlation Heatmap 
+### 2.3.4. Heatmap to Check Correlation
 ```{r}
 library(corrplot)
 wdbc_numerical <- wdbc[, -c(1, 2)]
@@ -236,19 +237,16 @@ Based on the visual assessment and the Hopkins statistic of 0.9999997, the breas
 
 ### 3.2.1. Elbow Method
 ```{r}
-wdbc_elbow_kmeans <- fviz_nbclust(wdbc, kmeans, method = "wss") + 
-  geom_vline(xintercept = 2, linetype = 2)
+wdbc_elbow_kmeans <- fviz_nbclust(wdbc, kmeans, method = "wss") + geom_vline(xintercept = 2, linetype = 2)
 wdbc_elbow_kmeans
 ```
 
 
 ### 3.2.2. Silhouette Method
 ```{r}
-wdbc_silhouette_kmeans <- fviz_nbclust(wdbc, kmeans, method = "silhouette") + 
-  labs(title = "K-means Silhouette Method")
+wdbc_silhouette_kmeans <- fviz_nbclust(wdbc, kmeans, method = "silhouette") + labs(title = "K-means Silhouette Method")
 
-wdbc_silhouette_pam <- fviz_nbclust(wdbc, pam, method = "silhouette") + 
-  labs(title = "PAM Silhouette Method")
+wdbc_silhouette_pam <- fviz_nbclust(wdbc, pam, method = "silhouette") + labs(title = "PAM Silhouette Method")
 
 wdbc_silhouette_kmeans +
   wdbc_silhouette_pam +
@@ -282,8 +280,7 @@ get_cluster_diff <- function(gap_stat, max_k = 10) {
 max_k <- 10
 gap_stat <- clusGap(wdbc, kmeans, K.max = max_k, B = 500)
 gap_diff_list <- get_cluster_diff(gap_stat, max_k)
-pos_neg_df <- data.frame(cluster = factor(seq_along(gap_diff_list)), 
-                         gap_diff = gap_diff_list)
+pos_neg_df <- data.frame(cluster = factor(seq_along(gap_diff_list)), gap_diff = gap_diff_list)
 
 kmeans_gap <- ggplot(data = pos_neg_df, aes(x = cluster, y = gap_diff)) +
   geom_bar(stat = "identity", fill = "#4494a4") +
@@ -299,8 +296,7 @@ Below, we calculate the gap statistics for the PAM clustering of the breast canc
 max_k <- 10
 gap_stat <- clusGap(wdbc, pam, K.max = max_k, B = 500)
 gap_diff_list <- get_cluster_diff(gap_stat, max_k)
-pos_neg_df <- data.frame(cluster = factor(seq_along(gap_diff_list)), 
-                         gap_diff = gap_diff_list)
+pos_neg_df <- data.frame(cluster = factor(seq_along(gap_diff_list)), gap_diff = gap_diff_list)
 
 pam_gap <- ggplot(data = pos_neg_df, aes(x = cluster, y = gap_diff)) +
   geom_bar(stat = "identity", fill = "#4494a4") +
@@ -387,6 +383,11 @@ wdbc_results <- cbind(
 ```
 
 ```{r}
+wdbc_results
+```
+
+
+```{r}
 kmeans_contingency_table <- table(wdbc_results$diagnosis, wdbc_results$kmeans_cluster)
 kmeans_contingency_table
 ```
@@ -438,7 +439,6 @@ plot(
 )
 legend("center", clusterMethods(intern_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
 ```
-
 * **Connectivity:** The optimal score of 6.7202 is achieved with hierarchical clustering at 2 clusters. This indicates the most compact clustering with minimal inter-cluster distances is in k=2.
 * **Dunn Index:** The highest Dunn index of 0.3825 is observed with hierarchical clustering at 3 clusters, suggesting the best separation between clusters.
 * **Silhouette Width:** The maximum silhouette width of 0.6340 is found with hierarchical clustering at 2 clusters, reflecting the highest average similarity within clusters and dissimilarity between clusters.
@@ -460,7 +460,7 @@ optimal_scores_stab
 ```
 
 ```{r}
-par(mfrow = c(3, 2), mar = c(2, 2, 2, 1))
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
 
 plot(stab_wdbc, measure = c("APN", "AD", "ADM", "FOM"), legend = FALSE)
 
@@ -474,7 +474,6 @@ plot(
 )
 legend("left", clusterMethods(stab_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
 ```
-
 * **APN (Average Path Length):** The lowest APN of 0.0003905487 is achieved with hierarchical clustering at 3 clusters, indicating minimal average path lengths among clusters.
 * **AD (Average Distance):** The highest AD of 5.1021325696 is found with PAM clustering at 6 clusters, reflecting the average distance within clusters.
 * **ADM (Average Dissimilarity):** The lowest ADM of 0.0124118166 is achieved with hierarchical clustering at 3 clusters, showing minimal average dissimilarity within clusters.
@@ -485,9 +484,6 @@ legend("left", clusterMethods(stab_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9)
 
 
 # 6. Conclusion and Recommendation
-
-## 6.1. Conclusion
-
 In this study, we utilized partitioning clustering techniques, specifically K-Means and Partitioning Around Medoids (PAM), to analyze the breast cancer dataset. The analysis aimed to distinguish between benign and malignant cases based on the clustering of various tumor cell features.
 
 Our results demonstrated that K-Means clustering provided a slightly better alignment with the actual diagnosis labels compared to PAM.
@@ -496,7 +492,7 @@ The optimal number of clusters was determined to be two, based on various valida
 
 These findings can contribute to improving diagnostic accuracy and personalized treatment approaches by identifying key features that differentiate between benign and malignant cases, thereby aiding in early detection and targeted therapies.
 
-## 6.2. Recommendation
+The following are recommended for further study:
 
 1. **Advanced Clustering Techniques:** Explore more advanced clustering techniques such as hierarchical clustering or model-based clustering, which may provide deeper insights into the data structure. We've seen on the internal validation that hierarchical performs better.
 
