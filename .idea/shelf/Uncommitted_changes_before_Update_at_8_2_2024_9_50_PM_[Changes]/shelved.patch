@@ -1,0 +1,112 @@
+Index: DANA_4840_Research_Question_1.Rmd
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>---\r\ntitle: \"DANA 4840 Project - Research Question 1\"\r\nauthor: \"Aryan Mukherjee, Maryam Gadimova, Patricia Tating, Roman Shrestha\"\r\noutput: html_document\r\n---\r\n\r\nWhat is the role of dimensionality reduction techniques such as Principal Component Analysis (PCA), Independent Component Analysis (ICA), t-Distributed Stochastic Neighbor Embedding (t-SNE) or Uniform Manifold Approximation and Projection (UMAP) in enhancing clustering performance?\r\n\r\n## Loading the libraries\r\n```{r loading_libraries, message = FALSE}\r\nlibrary(\"ggplot2\")\r\nlibrary(\"factoextra\")\r\nlibrary(\"dendextend\")\r\nlibrary(\"hopkins\")\r\nlibrary(\"corrplot\")\r\nlibrary(\"cluster\")\r\nlibrary(\"patchwork\")\r\nlibrary(\"clValid\")\r\nlibrary(\"EMCluster\")\r\nlibrary(\"fastICA\")\r\nlibrary(\"Rtsne\")\r\nlibrary(\"umap\")\r\n```\r\n\r\n## Loading the Dataset\r\n```{r}\r\nwdbc <- read.csv(\"./data/wdbc.csv\", header = T, sep = \",\")\r\nhead(wdbc)\r\n```\r\n\r\n## Checking the internal structure\r\n```{r}\r\ndim(wdbc)\r\nstr(wdbc)\r\n```\r\n\r\n## Pre-processing and Normalizing\r\n```{r}\r\ncolor_palette <- rainbow(10)\r\ndiagnosis <- wdbc$diagnosis\r\nencoded_diagnosis <- ifelse(diagnosis == \"M\", 1, 2)\r\n\r\nwdbc_numerical <- wdbc[, -c(1, 2)]\r\n\r\nwdbc_scaled <- data.frame(scale(wdbc_numerical))\r\nrownames(wdbc_scaled) <- wdbc$ID\r\nwdbc <- wdbc_scaled\r\nhead(wdbc)\r\n```\r\n\r\n## Assessing Clustering Tendency\r\n\r\n## Hopkins Statistic\r\n```{r}\r\nset.seed(69)\r\n\r\nhopkins_wdbc <- hopkins(wdbc, m = ceiling(nrow(wdbc) / 10))\r\nhopkins_wdbc\r\n```\r\n\r\n## K-Means Graph\r\n```{r}\r\nget_kmeans_plot <- function(km.res, data, name) {\r\n  p <- fviz_cluster(\r\n    km.res,\r\n    data = data,\r\n    palette = color_palette,\r\n    ellipse.type = \"convex\",\r\n    star.plot = TRUE,\r\n    ellipse = TRUE,\r\n    geom = \"point\",\r\n    main = paste0(name, \" K-Means Cluster Plot\"),\r\n    ggtheme = theme_minimal()\r\n  )\r\n\r\n  return(p)\r\n}\r\n```\r\n\r\n## Base\r\n```{r}\r\nset.seed(101)\r\n\r\nkm.res <- kmeans(wdbc, 2, nstart = 100)\r\n\r\nget_kmeans_plot(km.res, wdbc, \"Base\")\r\nRRand(encoded_diagnosis, km.res$cluster)\r\n```\r\n\r\n## PCA\r\n```{r}\r\nset.seed(101)\r\n\r\npca_wdbc <- prcomp(wdbc)\r\npca_index <- which(cumsum(summary(pca_wdbc)$importance[2,]) >= 0.8)[1]\r\n\r\npca_data <- data.frame(pca_wdbc$x)\r\npca_data_no <- pca_data[, 1:pca_index]\r\n\r\npca_km.res <- kmeans(pca_data_no, 2, nstart = 100)\r\n\r\nget_kmeans_plot(pca_km.res, pca_data_no, \"PCA\")\r\nRRand(encoded_diagnosis, pca_km.res$cluster)\r\n```\r\n\r\n## ICA\r\n```{r}\r\nset.seed(101)\r\n\r\nn_components <- 2\r\nica_result <- fastICA(wdbc, n.comp = n_components)\r\n\r\nica_data <- data.frame(ica_result$S)\r\ncolnames(ica_data) <- paste0(\"IC\", 1:n_components)\r\n\r\nica_km.res <- kmeans(ica_data, 2, nstart = 100)\r\n\r\nget_kmeans_plot(ica_km.res, ica_data, \"ICA\")\r\nRRand(encoded_diagnosis, ica_km.res$cluster)\r\n```\r\n\r\n## t-SNE\r\n```{r}\r\nset.seed(101)\r\n\r\ntsne_result <- Rtsne(wdbc, dims = 3, perplexity = 30)\r\ntsne_data <- as.data.frame(tsne_result$Y)\r\n\r\ntsne_km.res <- kmeans(tsne_data, 2, nstart = 100)\r\n\r\nget_kmeans_plot(tsne_km.res, tsne_data, \"t-SNE\")\r\nRRand(encoded_diagnosis, tsne_km.res$cluster)\r\n```\r\n\r\n## UMAP\r\n```{r}\r\nset.seed(101)\r\n\r\numap_result <- umap(wdbc)\r\numap_data <- as.data.frame(umap_result$layout)\r\n\r\numap_km.res <- kmeans(umap_data, 2, nstart = 100)\r\n\r\nget_kmeans_plot(umap_km.res, umap_data, \"UMAP\")\r\nRRand(encoded_diagnosis, umap_km.res$cluster)\r\n```\r\n\r\n## LDA\r\n```{r}\r\nlda_model <- lda(diagnosis ~ ., data = wdbc)\r\nlda_values <- predict(lda_model)\r\n\r\nlda_data <- data.frame(lda_values$x)\r\nlda_data$diagnosis <- diagnosis\r\n\r\nggplot(lda_data, aes(x = LD1, y = 0, color = diagnosis)) +\r\n  geom_point(size = 3) +\r\n  labs(\r\n    title = \"LDA: Iris Data Projected onto the First Linear Discriminant\",\r\n    x = \"Linear Discriminant 1\",\r\n    y = \"\"\r\n  ) +\r\n  theme_minimal() +\r\n  theme(\r\n    axis.text.y = element_blank(),\r\n    axis.ticks.y = element_blank(),\r\n    axis.title.y = element_blank()\r\n  )\r\n```\r\n\r\n## Internal Validation\r\n```{r}\r\nintern_wdbc <- clValid(pca_data_no, 2:6, clMethods = c(\"kmeans\", \"pam\"), validation = \"internal\")\r\n\r\nsummary(intern_wdbc)\r\n```\r\n\r\n```{r}\r\nop <- par(no.readonly = TRUE)\r\npar(mfrow = c(2, 2), mar = c(4, 4, 3, 1))\r\n\r\nplot(intern_wdbc, legend = FALSE)\r\n\r\nplot(nClusters(intern_wdbc), measures(intern_wdbc, \"Dunn\")[, , 1], type = \"n\", axes = FALSE, xlab = \"\", ylab = \"\")\r\nlegend(\"center\", clusterMethods(intern_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))\r\n\r\npar(op)\r\n```\r\n\r\n## Stability Validation\r\n```{r}\r\nstab_wdbc <- clValid(pca_data_no, nClust = 2:6, clMethods = c(\"hierarchical\", \"kmeans\", \"pam\"), validation = \"stability\")\r\n\r\noptimal_scores_stab <- optimalScores(stab_wdbc)\r\noptimal_scores_stab\r\n```\r\n\r\n```{r}\r\npar(mfrow = c(2, 2), mar = c(4, 4, 3, 1))\r\n\r\nplot(stab_wdbc, measure = c(\"APN\", \"AD\", \"ADM\", \"FOM\"), legend = FALSE)\r\n\r\nplot(nClusters(stab_wdbc), measures(stab_wdbc, \"APN\")[, , 1], type = \"n\", axes = FALSE, xlab = \"\", ylab = \"\")\r\nlegend(\"left\", clusterMethods(stab_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))\r\n```\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/DANA_4840_Research_Question_1.Rmd b/DANA_4840_Research_Question_1.Rmd
+--- a/DANA_4840_Research_Question_1.Rmd	(revision 10ef56036107edc63f6827d82b2f2ad2a10d185a)
++++ b/DANA_4840_Research_Question_1.Rmd	(date 1722618035698)
+@@ -48,16 +48,6 @@
+ head(wdbc)
+ ```
+ 
+-## Assessing Clustering Tendency
+-
+-## Hopkins Statistic
+-```{r}
+-set.seed(69)
+-
+-hopkins_wdbc <- hopkins(wdbc, m = ceiling(nrow(wdbc) / 10))
+-hopkins_wdbc
+-```
+-
+ ## K-Means Graph
+ ```{r}
+ get_kmeans_plot <- function(km.res, data, name) {
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"648550f5-50e6-4136-94de-c940c6745bcf\" name=\"Changes\" comment=\"- Research Question 1\">\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/misc.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/misc.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/DANA 4840 Research 1.Rmd\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/DANA 4840 Research 1.Rmd\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/DANA4840_Partitional_Clustering_Cancer.Rmd\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/DANA4840_Partitional_Clustering_Cancer.Rmd\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/DANA4840_Research_Question_2.Rmd\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/DANA4840_Research_Question_2.Rmd\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/Group3_Hierarchical_Clustering.Rmd\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/Group3_Hierarchical_Clustering.Rmd\" afterDir=\"false\" />\r\n    </list>\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"FileTemplateManagerImpl\">\r\n    <option name=\"RECENT_TEMPLATES\">\r\n      <list>\r\n        <option value=\"R Script\" />\r\n      </list>\r\n    </option>\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"MarkdownSettingsMigration\">\r\n    <option name=\"stateVersion\" value=\"1\" />\r\n  </component>\r\n  <component name=\"ProjectColorInfo\">{\r\n  &quot;associatedIndex&quot;: 4\r\n}</component>\r\n  <component name=\"ProjectId\" id=\"2ji3odpNQM6bkfxlrXGTTI8ox6W\" />\r\n  <component name=\"ProjectLevelVcsManager\">\r\n    <ConfirmationsSetting value=\"2\" id=\"Add\" />\r\n  </component>\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\">{\r\n  &quot;keyToString&quot;: {\r\n    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,\r\n    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,\r\n    &quot;git-widget-placeholder&quot;: &quot;main&quot;,\r\n    &quot;last_opened_file_path&quot;: &quot;C:/Users/Roman Shrestha/Documents/R/Semester_3/4840 - Classification II/DANA_4840_Project/DANA_4840_Group_Project/data&quot;,\r\n    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;\r\n  }\r\n}</component>\r\n  <component name=\"RecentsManager\">\r\n    <key name=\"CopyFile.RECENT_KEYS\">\r\n      <recent name=\"C:\\Users\\Roman Shrestha\\Documents\\R\\Semester_3\\4840 - Classification II\\DANA_4840_Project\\DANA_4840_Group_Project\\data\" />\r\n      <recent name=\"C:\\Users\\Roman Shrestha\\Documents\\R\\Semester_3\\4840 - Classification II\\DANA_4840_Project\\DANA_4840_Group_Project\" />\r\n    </key>\r\n  </component>\r\n  <component name=\"SharedIndexes\">\r\n    <attachedChunks>\r\n      <set>\r\n        <option value=\"bundled-python-sdk-df623cec81eb-c6172f9078bd-com.jetbrains.pycharm.ds.sharedIndexes.bundled-DS-233.15026.16\" />\r\n      </set>\r\n    </attachedChunks>\r\n  </component>\r\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\r\n  <component name=\"Vcs.Log.Tabs.Properties\">\r\n    <option name=\"TAB_STATES\">\r\n      <map>\r\n        <entry key=\"MAIN\">\r\n          <value>\r\n            <State />\r\n          </value>\r\n        </entry>\r\n      </map>\r\n    </option>\r\n  </component>\r\n  <component name=\"VcsManagerConfiguration\">\r\n    <option name=\"ADD_EXTERNAL_FILES_SILENTLY\" value=\"true\" />\r\n    <MESSAGE value=\"- added some files, minor fixes to the code\" />\r\n    <MESSAGE value=\"- code changes\" />\r\n    <MESSAGE value=\"- minor changes to mtcars\" />\r\n    <MESSAGE value=\"- minor changes to hierarchical\" />\r\n    <MESSAGE value=\"- minor code revision&#10;- project folder clean up\" />\r\n    <MESSAGE value=\"- fixed up some of the graphs\" />\r\n    <MESSAGE value=\"- minor change\" />\r\n    <MESSAGE value=\"- major code changes&#10;- topics properly structured&#10;- wdbc dataset source change\" />\r\n    <MESSAGE value=\"- changed project file structure\" />\r\n    <MESSAGE value=\"- changed project file structure 2\" />\r\n    <MESSAGE value=\"- fixed up hierarchical code\" />\r\n    <MESSAGE value=\"- fixed up kmeans/pam code\" />\r\n    <MESSAGE value=\"- Updated README.md&#10;- project file structure fix\" />\r\n    <MESSAGE value=\"- project file structure fix\" />\r\n    <MESSAGE value=\"- coding final\" />\r\n    <MESSAGE value=\"- Research Question 1\" />\r\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"- Research Question 1\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision 10ef56036107edc63f6827d82b2f2ad2a10d185a)
++++ b/.idea/workspace.xml	(date 1722618463457)
+@@ -4,13 +4,10 @@
+     <option name="autoReloadType" value="SELECTIVE" />
+   </component>
+   <component name="ChangeListManager">
+-    <list default="true" id="648550f5-50e6-4136-94de-c940c6745bcf" name="Changes" comment="- Research Question 1">
++    <list default="true" id="648550f5-50e6-4136-94de-c940c6745bcf" name="Changes" comment="- Minor housekeeping stuff 2">
+       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/DANA 4840 Research 1.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/DANA 4840 Research 1.Rmd" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/DANA4840_Partitional_Clustering_Cancer.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/DANA4840_Partitional_Clustering_Cancer.Rmd" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/DANA4840_Research_Question_2.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/DANA4840_Research_Question_2.Rmd" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/Group3_Hierarchical_Clustering.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/Group3_Hierarchical_Clustering.Rmd" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/DANA_4840_Research_Question_1.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/DANA_4840_Research_Question_1.Rmd" afterDir="false" />
+     </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+@@ -30,6 +27,9 @@
+   <component name="MarkdownSettingsMigration">
+     <option name="stateVersion" value="1" />
+   </component>
++  <component name="ProblemsViewState">
++    <option name="selectedTabId" value="CurrentFile" />
++  </component>
+   <component name="ProjectColorInfo">{
+   &quot;associatedIndex&quot;: 4
+ }</component>
+@@ -95,6 +95,8 @@
+     <MESSAGE value="- project file structure fix" />
+     <MESSAGE value="- coding final" />
+     <MESSAGE value="- Research Question 1" />
+-    <option name="LAST_COMMIT_MESSAGE" value="- Research Question 1" />
++    <MESSAGE value="- Minor housekeeping stuff" />
++    <MESSAGE value="- Minor housekeeping stuff 2" />
++    <option name="LAST_COMMIT_MESSAGE" value="- Minor housekeeping stuff 2" />
+   </component>
+ </project>
+\ No newline at end of file
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"PyCharmDSProjectLayout\">\r\n    <option name=\"id\" value=\"JupyterRightHiddenStructureLayout\" />\r\n  </component>\r\n  <component name=\"RMarkdownSettings\">\r\n    <option name=\"renderProfiles\">\r\n      <map>\r\n        <entry key=\"file://$PROJECT_DIR$/Cluster-Assessment.Rmd\">\r\n          <value>\r\n            <RMarkdownRenderProfile>\r\n              <option name=\"outputDirectoryUrl\" value=\"file://$PROJECT_DIR$\" />\r\n            </RMarkdownRenderProfile>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"file://$PROJECT_DIR$/DANA 4840 Project.Rmd\">\r\n          <value>\r\n            <RMarkdownRenderProfile>\r\n              <option name=\"outputDirectoryUrl\" value=\"file://$PROJECT_DIR$\" />\r\n            </RMarkdownRenderProfile>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"file://$PROJECT_DIR$/DANA 4840 Research 1.Rmd\">\r\n          <value>\r\n            <RMarkdownRenderProfile>\r\n              <option name=\"outputDirectoryUrl\" value=\"file://$PROJECT_DIR$\" />\r\n            </RMarkdownRenderProfile>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"file://$PROJECT_DIR$/DANA4840_Hierarchical-Clustering_Cars-Dataset.Rmd\">\r\n          <value>\r\n            <RMarkdownRenderProfile>\r\n              <option name=\"outputDirectoryUrl\" value=\"file://$PROJECT_DIR$\" />\r\n            </RMarkdownRenderProfile>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"file://$PROJECT_DIR$/DANA4840_Hierarchical-Clustering_Cars-Dataset_UpdatedAgain.Rmd\">\r\n          <value>\r\n            <RMarkdownRenderProfile>\r\n              <option name=\"outputDirectoryUrl\" value=\"file://$PROJECT_DIR$\" />\r\n            </RMarkdownRenderProfile>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"file://$PROJECT_DIR$/DANA4840_Hierarchical-Clustering_Cars-Dataset_updated.Rmd\">\r\n          <value>\r\n            <RMarkdownRenderProfile>\r\n              <option name=\"outputDirectoryUrl\" value=\"file://$PROJECT_DIR$\" />\r\n            </RMarkdownRenderProfile>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"file://$PROJECT_DIR$/DANA4840_Hierarchical_Clustering_Cars.Rmd\">\r\n          <value>\r\n            <RMarkdownRenderProfile>\r\n              <option name=\"outputDirectoryUrl\" value=\"file://$PROJECT_DIR$\" />\r\n            </RMarkdownRenderProfile>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"file://$PROJECT_DIR$/DANA4840_Partitional-Clustering_Breast-Cancer-Dataset.Rmd\">\r\n          <value>\r\n            <RMarkdownRenderProfile>\r\n              <option name=\"outputDirectoryUrl\" value=\"file://$PROJECT_DIR$\" />\r\n            </RMarkdownRenderProfile>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"file://$PROJECT_DIR$/DANA4840_Partitional-Clustering_Breast-Cancer-Dataset_Updated.Rmd\">\r\n          <value>\r\n            <RMarkdownRenderProfile>\r\n              <option name=\"outputDirectoryUrl\" value=\"file://$PROJECT_DIR$\" />\r\n            </RMarkdownRenderProfile>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"file://$PROJECT_DIR$/DANA4840_Partitional_Clustering_Cancer.Rmd\">\r\n          <value>\r\n            <RMarkdownRenderProfile>\r\n              <option name=\"outputDirectoryUrl\" value=\"file://$PROJECT_DIR$\" />\r\n            </RMarkdownRenderProfile>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"file://$PROJECT_DIR$/DANA4840_Research_Question_2.Rmd\">\r\n          <value>\r\n            <RMarkdownRenderProfile>\r\n              <option name=\"outputDirectoryUrl\" value=\"file://$PROJECT_DIR$\" />\r\n            </RMarkdownRenderProfile>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"file://$PROJECT_DIR$/Group3_Hierarchical_Clustering.Rmd\">\r\n          <value>\r\n            <RMarkdownRenderProfile>\r\n              <option name=\"outputDirectoryUrl\" value=\"file://$PROJECT_DIR$\" />\r\n            </RMarkdownRenderProfile>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"file://$PROJECT_DIR$/Roman-Test.Rmd\">\r\n          <value>\r\n            <RMarkdownRenderProfile>\r\n              <option name=\"outputDirectoryUrl\" value=\"file://$PROJECT_DIR$\" />\r\n            </RMarkdownRenderProfile>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"file://$PROJECT_DIR$/hierarchical_exampleAlice.Rmd\">\r\n          <value>\r\n            <RMarkdownRenderProfile>\r\n              <option name=\"outputDirectoryUrl\" value=\"file://$PROJECT_DIR$\" />\r\n            </RMarkdownRenderProfile>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"file://$PROJECT_DIR$/main.Rmd\">\r\n          <value>\r\n            <RMarkdownRenderProfile>\r\n              <option name=\"outputDirectoryUrl\" value=\"file://$PROJECT_DIR$\" />\r\n            </RMarkdownRenderProfile>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"file://$PROJECT_DIR$/old_code/DANA 4840 Project.Rmd\">\r\n          <value>\r\n            <RMarkdownRenderProfile>\r\n              <option name=\"outputDirectoryUrl\" value=\"file://$PROJECT_DIR$/old_code\" />\r\n            </RMarkdownRenderProfile>\r\n          </value>\r\n        </entry>\r\n      </map>\r\n    </option>\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	(revision 10ef56036107edc63f6827d82b2f2ad2a10d185a)
++++ b/.idea/misc.xml	(date 1722615914026)
+@@ -83,6 +83,27 @@
+             </RMarkdownRenderProfile>
+           </value>
+         </entry>
++        <entry key="file://$PROJECT_DIR$/DANA_4840_Hierarchical_Clustering.Rmd">
++          <value>
++            <RMarkdownRenderProfile>
++              <option name="outputDirectoryUrl" value="file://$PROJECT_DIR$" />
++            </RMarkdownRenderProfile>
++          </value>
++        </entry>
++        <entry key="file://$PROJECT_DIR$/DANA_4840_Partitional_Clustering.Rmd">
++          <value>
++            <RMarkdownRenderProfile>
++              <option name="outputDirectoryUrl" value="file://$PROJECT_DIR$" />
++            </RMarkdownRenderProfile>
++          </value>
++        </entry>
++        <entry key="file://$PROJECT_DIR$/DANA_4840_Research_Question_1.Rmd">
++          <value>
++            <RMarkdownRenderProfile>
++              <option name="outputDirectoryUrl" value="file://$PROJECT_DIR$" />
++            </RMarkdownRenderProfile>
++          </value>
++        </entry>
+         <entry key="file://$PROJECT_DIR$/Group3_Hierarchical_Clustering.Rmd">
+           <value>
+             <RMarkdownRenderProfile>

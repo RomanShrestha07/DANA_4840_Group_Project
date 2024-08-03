@@ -20,8 +20,10 @@ library("EMCluster")
 library("fastICA")
 library("Rtsne")
 library("umap")
-library(mclust)
+library("mclust")
+library("fpc")
 ```
+
 
 ## Loading the Dataset
 ```{r}
@@ -29,16 +31,11 @@ wdbc <- read.csv("./data/wdbc.csv", header = T, sep = ",")
 head(wdbc)
 ```
 
-## Checking the internal structure
-```{r}
-dim(wdbc)
-str(wdbc)
-```
 
 ## Pre-processing and Normalizing
 ```{r}
 color_palette <- rainbow(10) #color palette
-diagnosis <- wdbc$diagnosis 
+diagnosis <- wdbc$diagnosis
 encoded_diagnosis <- ifelse(diagnosis == "M", 1, 2) #making diagnoses numerical
 
 wdbc_numerical <- wdbc[, -c(1, 2)] #remove id and diagnosis
@@ -47,18 +44,9 @@ wdbc_scaled <- data.frame(scale(wdbc_numerical)) #scale data
 rownames(wdbc_scaled) <- wdbc$ID
 wdbc <- wdbc_scaled
 head(wdbc)
+dim(wdbc)
 ```
 
-## Assessing Clustering Tendency
-
-## Hopkins Statistic
-```{r}
-set.seed(69)
-
-hopkins_wdbc <- hopkins(wdbc, m = ceiling(nrow(wdbc) / 10))
-hopkins_wdbc
-```
-This indicates highly clusterable data structure
 
 ## K-Means Graph
 ```{r}
@@ -79,6 +67,7 @@ get_kmeans_plot <- function(km.res, data, name) {
 }
 ```
 
+
 ## Base
 ```{r}
 set.seed(101)
@@ -88,8 +77,7 @@ km.res <- kmeans(wdbc, 2, nstart = 100)
 get_kmeans_plot(km.res, wdbc, "Base")
 RRand(encoded_diagnosis, km.res$cluster)
 ```
-
- The clusters are reasonably well-separated with no overlap
+The clusters are reasonably well-separated with no overlap, and with an Adjusted Rand Index of 0.6707 indicates a good level of agreement with the actual results.
 
 
 ## PCA
@@ -97,7 +85,7 @@ RRand(encoded_diagnosis, km.res$cluster)
 set.seed(101)
 
 pca_wdbc <- prcomp(wdbc)
-pca_index <- which(cumsum(summary(pca_wdbc)$importance[2,]) >= 0.8)[1]
+pca_index <- which(cumsum(summary(pca_wdbc)$importance[2,]) >= 0.8)[1] # taking principal components which explain 80% of the variation in the data
 
 pca_data <- data.frame(pca_wdbc$x)
 pca_data_no <- pca_data[, 1:pca_index]
@@ -107,8 +95,8 @@ pca_km.res <- kmeans(pca_data_no, 2, nstart = 100)
 get_kmeans_plot(pca_km.res, pca_data_no, "PCA")
 RRand(encoded_diagnosis, pca_km.res$cluster)
 ```
+Visually PCA provides clusters that are not very well-separated and also seem to have slight overlap. Even when the number of dimensions are dropped from 30 down to 5, looking at the Adjusted Rand Index of 0.6707 it shows good level of agreement with the actual results. We are reducing the dimensionality (and complexity) while maintaining the same results.
 
-PCA provides clusters that are not very well-separated but with slight overlap
 
 ## ICA
 ```{r}
@@ -125,9 +113,10 @@ ica_km.res <- kmeans(ica_data, 2, nstart = 100)
 get_kmeans_plot(ica_km.res, ica_data, "ICA")
 RRand(encoded_diagnosis, ica_km.res$cluster)
 ```
-ICA provides clusters that are not very well-separated  with no overlap
+Visually ICA provides clusters that are not very well-separated but with no overlap. With an Adjusted Rand Index of 0.7058, it shows minor improvement in the performance of the clustering method.
 
-## t-SNE
+
+## t-Distributed Stochastic Neighbour Embedding (t-SNE)
 ```{r}
 set.seed(101)
 
@@ -139,7 +128,10 @@ tsne_km.res <- kmeans(tsne_data, 2, nstart = 100)
 get_kmeans_plot(tsne_km.res, tsne_data, "t-SNE")
 RRand(encoded_diagnosis, tsne_km.res$cluster)
 ```
-t-sne provides clusters that are  well-separated with no overlap
+Visually t-SNE provides clusters that are well-separated with no overlap. With an Adjusted Rand Index of 0.7731, it shows a drastic improvement in the performance of the clustering method.
+
+
+## Uniform Manifold Approximation and Projection (UMAP)
 ```{r}
 set.seed(101)
 
@@ -151,63 +143,6 @@ umap_km.res <- kmeans(umap_data, 2, nstart = 100)
 get_kmeans_plot(umap_km.res, umap_data, "UMAP")
 RRand(encoded_diagnosis, umap_km.res$cluster)
 ```
+Finally, visually UMAP provides clusters that are very well-separated with no overlap. With an Adjusted Rand Index of 0.77, it shows the highest improvement in the performance of the clustering method.
 
-## LDA
-```{r}
-lda_model <- lda(diagnosis ~ ., data = wdbc)
-lda_values <- predict(lda_model)
-
-lda_data <- data.frame(lda_values$x)
-lda_data$diagnosis <- diagnosis
-
-ggplot(lda_data, aes(x = LD1, y = 0, color = diagnosis)) +
-  geom_point(size = 3) +
-  labs(
-    title = "LDA: Iris Data Projected onto the First Linear Discriminant",
-    x = "Linear Discriminant 1",
-    y = ""
-  ) +
-  theme_minimal() +
-  theme(
-    axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    axis.title.y = element_blank()
-  )
-```
-LDA does not separate the clusters well enough as there is still overlap after LDA
-
-
-
-## Meila's Variation Index
-
-```{r}
-# Meila's Variation Index for Base
-diagnosis_numeric <- as.numeric(as.factor(diagnosis))
-result <- cluster.stats(d = dist(wdbc_numerical), km.res$cluster, diagnosis_numeric)
-vi_index_base <- result$vi
-print(paste("Base - Meila's Variation Index:", vi_index_base))
-```
-The VI value of 0.5772 suggests a moderate level of agreement between the clusters produced by our k-means algorithm and the true diagnostic categories.
-## Meila's Variation Index for PCA
-```{r}
-
-result <- cluster.stats(d = dist(pca_data_no), pca_km.res$cluster, diagnosis_numeric)
-vi_index_pca <- result$vi
-print(paste("PCA - Meila's Variation Index:", vi_index_pca))
-
-```
-## Meila's Variation Index for t-SNE
-```{r}
-
-result <- cluster.stats(d = dist(tsne_data), tsne_km.res$cluster, diagnosis_numeric)
-vi_index_tsne <- result$vi
-print(paste("t-SNE - Meila's Variation Index:", vi_index_tsne))
-```
-## Meila's Variation Index for UMAP
-```{r}
-
-result <- cluster.stats(d = dist(umap_data), umap_km.res$cluster, diagnosis_numeric)
-vi_index_umap <- result$vi
-print(paste("UMAP - Meila's Variation Index:", vi_index_umap))
-```
-
+Looking at all of these results we can confidently say that dimensionality reduction techniques can significantly enhance the clustering performance.
