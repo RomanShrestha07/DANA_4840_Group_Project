@@ -6,7 +6,18 @@
   <component name="ChangeListManager">
     <list default="true" id="648550f5-50e6-4136-94de-c940c6745bcf" name="Changes" comment="- minor changes">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DANA_4840_Research_Question_1.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/DANA_4840_Research_Question_1.Rmd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_code/DANA 4840 Project.Rmd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_code/DANA4840_Hierarchical-Clustering_Cars-Dataset.Rmd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_code/DANA4840_Hierarchical-Clustering_Cars-Dataset_updated.Rmd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_code/DANA4840_Hierarchical-Clustering_Cars-Dataset_updated1.Rmd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_code/DANA4840_Hierarchical_Clustering_Cars (1).Rmd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_code/DANA4840_Hierarchical_Clustering_Cars.Rmd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_code/DANA4840_Partitional-Clustering_Breast-Cancer-Dataset.Rmd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_code/DANA4840_Partitional-Clustering_Breast-Cancer-Dataset_Updated.Rmd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_code/DANA4840_Partitional-Clustering_Breast-Cancer-Dataset_UpdatedAgain.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_code/DANA4840_Partitional_Clustering_Cancer (1).Rmd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_code/DANA4840_Partitional_Clustering_Cancer--1-.Rmd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_code/DANA4840_Partitional_Clustering_Cancer.Rmd" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
