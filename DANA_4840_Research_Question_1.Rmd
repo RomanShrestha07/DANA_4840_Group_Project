@@ -1,10 +1,12 @@
 ---
 title: "DANA 4840 Project - Research Question 1"
 author: "Aryan Mukherjee, Maryam Gadimova, Patricia Tating, Roman Shrestha"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
-What is the role of dimensionality reduction techniques such as Principal Component Analysis (PCA), Independent Component Analysis (ICA), t-Distributed Stochastic Neighbor Embedding (t-SNE) or Uniform Manifold Approximation and Projection (UMAP) in enhancing clustering performance?
+**What is the role of dimensionality reduction techniques such as Principal Component Analysis (PCA), Independent Component Analysis (ICA), t-Distributed Stochastic Neighbor Embedding (t-SNE) or Uniform Manifold Approximation and Projection (UMAP) in enhancing clustering performance?**
 
 ## Loading the libraries
 ```{r loading_libraries, message = FALSE}
