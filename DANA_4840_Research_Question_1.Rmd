@@ -120,7 +120,7 @@ Visually ICA provides clusters that are not very well-separated but with no over
 ```{r}
 set.seed(101)
 
-tsne_result <- Rtsne(wdbc, dims = 3, perplexity = 30)
+tsne_result <- Rtsne(wdbc, dims = 3, perplexity = 30) # dimension reduction to only 3
 tsne_data <- as.data.frame(tsne_result$Y)
 
 tsne_km.res <- kmeans(tsne_data, 2, nstart = 100)
@@ -143,6 +143,6 @@ umap_km.res <- kmeans(umap_data, 2, nstart = 100)
 get_kmeans_plot(umap_km.res, umap_data, "UMAP")
 RRand(encoded_diagnosis, umap_km.res$cluster)
 ```
-Finally, visually UMAP provides clusters that are very well-separated with no overlap. With an Adjusted Rand Index of 0.77, it shows the highest improvement in the performance of the clustering method.
+Finally, visually UMAP provides clusters that are very well-separated with no overlap. With an Adjusted Rand Index of 0.7794, it shows the highest improvement in the performance of the clustering method.
 
 Looking at all of these results we can confidently say that dimensionality reduction techniques can significantly enhance the clustering performance.
