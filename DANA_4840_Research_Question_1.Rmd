@@ -20,6 +20,7 @@ library("EMCluster")
 library("fastICA")
 library("Rtsne")
 library("umap")
+library(mclust)
 ```
 
 ## Loading the Dataset
@@ -36,13 +37,13 @@ str(wdbc)
 
 ## Pre-processing and Normalizing
 ```{r}
-color_palette <- rainbow(10)
-diagnosis <- wdbc$diagnosis
-encoded_diagnosis <- ifelse(diagnosis == "M", 1, 2)
+color_palette <- rainbow(10) #color palette
+diagnosis <- wdbc$diagnosis 
+encoded_diagnosis <- ifelse(diagnosis == "M", 1, 2) #making diagnoses numerical
 
-wdbc_numerical <- wdbc[, -c(1, 2)]
+wdbc_numerical <- wdbc[, -c(1, 2)] #remove id and diagnosis
 
-wdbc_scaled <- data.frame(scale(wdbc_numerical))
+wdbc_scaled <- data.frame(scale(wdbc_numerical)) #scale data
 rownames(wdbc_scaled) <- wdbc$ID
 wdbc <- wdbc_scaled
 head(wdbc)
@@ -57,6 +58,7 @@ set.seed(69)
 hopkins_wdbc <- hopkins(wdbc, m = ceiling(nrow(wdbc) / 10))
 hopkins_wdbc
 ```
+This indicates highly clusterable data structure
 
 ## K-Means Graph
 ```{r}
@@ -87,6 +89,9 @@ get_kmeans_plot(km.res, wdbc, "Base")
 RRand(encoded_diagnosis, km.res$cluster)
 ```
 
+ The clusters are reasonably well-separated with no overlap
+
+
 ## PCA
 ```{r}
 set.seed(101)
@@ -103,6 +108,8 @@ get_kmeans_plot(pca_km.res, pca_data_no, "PCA")
 RRand(encoded_diagnosis, pca_km.res$cluster)
 ```
 
+PCA provides clusters that are not very well-separated but with slight overlap
+
 ## ICA
 ```{r}
 set.seed(101)
@@ -118,6 +125,7 @@ ica_km.res <- kmeans(ica_data, 2, nstart = 100)
 get_kmeans_plot(ica_km.res, ica_data, "ICA")
 RRand(encoded_diagnosis, ica_km.res$cluster)
 ```
+ICA provides clusters that are not very well-separated  with no overlap
 
 ## t-SNE
 ```{r}
@@ -131,8 +139,7 @@ tsne_km.res <- kmeans(tsne_data, 2, nstart = 100)
 get_kmeans_plot(tsne_km.res, tsne_data, "t-SNE")
 RRand(encoded_diagnosis, tsne_km.res$cluster)
 ```
-
-## UMAP
+t-sne provides clusters that are  well-separated with no overlap
 ```{r}
 set.seed(101)
 
@@ -167,39 +174,40 @@ ggplot(lda_data, aes(x = LD1, y = 0, color = diagnosis)) +
     axis.title.y = element_blank()
   )
 ```
+LDA does not separate the clusters well enough as there is still overlap after LDA
 
-## Internal Validation
-```{r}
-intern_wdbc <- clValid(pca_data_no, 2:6, clMethods = c("kmeans", "pam"), validation = "internal")
 
-summary(intern_wdbc)
-```
+
+## Meila's Variation Index
 
 ```{r}
-op <- par(no.readonly = TRUE)
-par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
-
-plot(intern_wdbc, legend = FALSE)
-
-plot(nClusters(intern_wdbc), measures(intern_wdbc, "Dunn")[, , 1], type = "n", axes = FALSE, xlab = "", ylab = "")
-legend("center", clusterMethods(intern_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
-
-par(op)
+# Meila's Variation Index for Base
+diagnosis_numeric <- as.numeric(as.factor(diagnosis))
+result <- cluster.stats(d = dist(wdbc_numerical), km.res$cluster, diagnosis_numeric)
+vi_index_base <- result$vi
+print(paste("Base - Meila's Variation Index:", vi_index_base))
 ```
-
-## Stability Validation
+The VI value of 0.5772 suggests a moderate level of agreement between the clusters produced by our k-means algorithm and the true diagnostic categories.
+## Meila's Variation Index for PCA
 ```{r}
-stab_wdbc <- clValid(pca_data_no, nClust = 2:6, clMethods = c("hierarchical", "kmeans", "pam"), validation = "stability")
 
-optimal_scores_stab <- optimalScores(stab_wdbc)
-optimal_scores_stab
+result <- cluster.stats(d = dist(pca_data_no), pca_km.res$cluster, diagnosis_numeric)
+vi_index_pca <- result$vi
+print(paste("PCA - Meila's Variation Index:", vi_index_pca))
+
 ```
-
+## Meila's Variation Index for t-SNE
 ```{r}
-par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
 
-plot(stab_wdbc, measure = c("APN", "AD", "ADM", "FOM"), legend = FALSE)
-
-plot(nClusters(stab_wdbc), measures(stab_wdbc, "APN")[, , 1], type = "n", axes = FALSE, xlab = "", ylab = "")
-legend("left", clusterMethods(stab_wdbc), col = 1:9, lty = 1:9, pch = paste(1:9))
+result <- cluster.stats(d = dist(tsne_data), tsne_km.res$cluster, diagnosis_numeric)
+vi_index_tsne <- result$vi
+print(paste("t-SNE - Meila's Variation Index:", vi_index_tsne))
 ```
+## Meila's Variation Index for UMAP
+```{r}
+
+result <- cluster.stats(d = dist(umap_data), umap_km.res$cluster, diagnosis_numeric)
+vi_index_umap <- result$vi
+print(paste("UMAP - Meila's Variation Index:", vi_index_umap))
+```
+
