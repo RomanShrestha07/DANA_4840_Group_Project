@@ -4,11 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="648550f5-50e6-4136-94de-c940c6745bcf" name="Changes" comment="- Minor housekeeping stuff 2">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DANA_4840_Research_Question_1.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/DANA_4840_Research_Question_1.Rmd" afterDir="false" />
-    </list>
+    <list default="true" id="648550f5-50e6-4136-94de-c940c6745bcf" name="Changes" comment="- Research Question 1 interpretations" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -97,6 +93,7 @@
     <MESSAGE value="- Research Question 1" />
     <MESSAGE value="- Minor housekeeping stuff" />
     <MESSAGE value="- Minor housekeeping stuff 2" />
-    <option name="LAST_COMMIT_MESSAGE" value="- Minor housekeeping stuff 2" />
+    <MESSAGE value="- Research Question 1 interpretations" />
+    <option name="LAST_COMMIT_MESSAGE" value="- Research Question 1 interpretations" />
   </component>
 </project>
